@@ -1,15 +1,46 @@
 # %%
+# IMPORTS
 import pandas as pd
 from google.cloud import bigquery
 from google.oauth2 import service_account
+import subprocess
+import os
 
-# %% 
+# %%
+# GENERATE METRIC RESULTS
+
+# Set DBT profile
+os.environ['DBT_PROFILES_DIR'] = '/Users/benw/.dbt/dbt-slt'
+
+# Define the command to be run
+command = ["mf", "query", "--saved-query", "new_customer_orders", "--csv", "logs/simple_metric.csv"]
+
+# Run the command
+result = subprocess.run(command, capture_output=True, text=True)
+
+# Check if the command was successful
+if result.returncode == 0:
+    print("Command executed successfully")
+    print("Output:")
+    print(result.stdout)
+else:
+    print("Error occurred while executing command")
+    print("Error message:")
+    print(result.stderr)
+
+
+# %%
+# UPLOAD RESULTS
 
 # Path to the CSV file
 csv_file_path = 'logs/simple_metric.csv'
 
 # Load the CSV file into a DataFrame
 df = pd.read_csv(csv_file_path)
+
+# Add column_1, column_2, etc column headers
+num_columns = df.shape[1]
+df.columns = [f'column_{i+1}' for i in range(num_columns)]
 
 # Set up the BigQuery client with OAuth authentication
 credentials = service_account.Credentials.from_service_account_file(
