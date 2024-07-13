@@ -1,7 +1,7 @@
 
 view: orders {
 
-  sql_table_name: fresh-iridium-428713-j5.dbt_slt.orders ;;
+  sql_table_name: fresh-iridium-428713-j5.jaffle_shop.orders ;;
 
   dimension: order_id {
     primary_key: yes
