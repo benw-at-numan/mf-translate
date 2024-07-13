@@ -1,4 +1,3 @@
 logs/*
 dbt_packages/*
 target/*
-keys/*
