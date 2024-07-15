@@ -1,0 +1,19 @@
+cubes:
+  - name: orders
+    sql_table: jaffle_shop.orders
+
+    joins: []
+
+    dimensions:
+
+      - name: order_id
+        primary_key: true
+
+      - name: ordered_at
+        type: datetime
+
+    measures:
+      - name: order_total
+        label: Order Total
+        description: Sum of total order amonunt. Includes tax + revenue.
+        type: sum
