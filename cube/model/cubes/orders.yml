@@ -7,13 +7,16 @@ cubes:
     dimensions:
 
       - name: order_id
+        type: string
         primary_key: true
+        sql: order_id
 
       - name: ordered_at
-        type: datetime
+        type: time
+        sql: ordered_at
 
     measures:
       - name: order_total
-        label: Order Total
         description: Sum of total order amonunt. Includes tax + revenue.
         type: sum
+        sql: order_total
