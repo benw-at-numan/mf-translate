@@ -28,6 +28,6 @@ cubes:
       - name: food_orders
         description: Count of orders that contain food order items.
         type: sum
-        sql: 1
+        sql: (1)
         filters:
-          sql: is_food_order = True
+          - sql: is_food_order = True
