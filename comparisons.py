@@ -166,3 +166,7 @@ generate_metricflow_results(mf_command='mf query --metrics food_orders', results
 
 generate_looker_results(explore='orders', fields=['orders.food_orders'], results_table='simple_metric_with_category_filter')
 do_query_results_match(results_table='simple_metric_with_category_filter', results_schema1='mf_query_results', results_schema2='lkr_query_results')
+
+generate_cube_results(query={"measures": ["orders.food_orders"]}, results_table='simple_metric_with_category_filter')
+do_query_results_match(results_table='simple_metric_with_category_filter', results_schema1='mf_query_results', results_schema2='cube_query_results')  
+# %%

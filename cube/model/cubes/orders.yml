@@ -15,8 +15,19 @@ cubes:
         type: time
         sql: ordered_at
 
+      - name: is_food_order
+        type: string
+        sql: is_food_order
+
     measures:
       - name: order_total
         description: Sum of total order amonunt. Includes tax + revenue.
         type: sum
         sql: order_total
+
+      - name: food_orders
+        description: Count of orders that contain food order items.
+        type: sum
+        sql: 1
+        filters:
+          sql: is_food_order = True
