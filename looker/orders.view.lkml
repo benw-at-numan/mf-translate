@@ -13,10 +13,23 @@ view: orders {
     sql: ${TABLE}.ordered_at ;;
   }
 
+  dimension: is_food_order {}
+
   measure: order_total {
     label: "Order Total"
     description: "Sum of total order amonunt. Includes tax + revenue."
     type: sum
   }
 
+  measure: food_orders {
+    description: "Count of orders that contain food order items"
+    label: "Food Orders"
+    type: number
+    sql:
+      sum(
+        case  when (${is_food_order} = true)
+          then (1)
+        end
+      ) ;;
+  }
 }
