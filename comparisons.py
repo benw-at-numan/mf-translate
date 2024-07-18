@@ -107,14 +107,14 @@ def generate_cube_results(query, results_table):
 
 
 
-def do_query_results_match(results_table, results_schema1, results_schema2):
+def do_query_results_match(results_query1, results_query2):
 
     query = f"""
     WITH results_schema1_results AS (
-      SELECT * FROM `{results_schema1}.{results_table}`
+      {results_query1}
     ),
     results_schema2_results AS (
-      SELECT * FROM `{results_schema2}.{results_table}`
+      {results_query2}
     ),
     results_schema1_except_results_schema2 AS (
       SELECT * FROM results_schema1_results
@@ -126,9 +126,9 @@ def do_query_results_match(results_table, results_schema1, results_schema2):
       EXCEPT DISTINCT
       SELECT * FROM results_schema1_results
     )
-    SELECT '`{results_schema1}`' AS source, * FROM results_schema1_except_results_schema2
+    SELECT '`{results_query1}`' AS source, * FROM results_schema1_except_results_schema2
       UNION ALL
-    SELECT '`{results_schema2}`' AS source, * FROM results_schema2_except_results_schema1
+    SELECT '`{results_query2}`' AS source, * FROM results_schema2_except_results_schema1
     """
 
     query_job = bq_client.query(query)
@@ -136,10 +136,10 @@ def do_query_results_match(results_table, results_schema1, results_schema2):
     mismatches = list(results)
 
     if len(mismatches) == 0:
-        print(f"Pass - {results_schema1}.{results_table} matches {results_schema1}.{results_table}")
+        print(f"Pass - `{results_query1}` matches `{results_query2}`")
         return True
     else:
-        print(f"Fail - {results_schema1}.{results_table} does not match {results_schema1}.{results_table}")
+        print(f"Fail - `{results_query1}` does not match `{results_query2}`")
 
         # Convert mismatches to a list of dictionaries
         mismatch_dicts = [dict(row) for row in mismatches]
@@ -155,18 +155,33 @@ def do_query_results_match(results_table, results_schema1, results_schema2):
 generate_metricflow_results(mf_command='mf query --metrics order_total', results_table='simple_metric')
 
 generate_looker_results(explore='orders', fields=['orders.order_total'], results_table='simple_metric')
-do_query_results_match(results_table='simple_metric', results_schema1='mf_query_results', results_schema2='lkr_query_results')
+do_query_results_match(results_query1='select * from mf_query_results.simple_metric',
+                       results_query2='select * from lkr_query_results.simple_metric')
 
 generate_cube_results(query={"measures": ["orders.order_total"]}, results_table='simple_metric')
-do_query_results_match(results_table='simple_metric', results_schema1='mf_query_results', results_schema2='cube_query_results')
+do_query_results_match(results_query1='select * from mf_query_results.simple_metric',
+                       results_query2='select * from cube_query_results.simple_metric')
 
 # %%
 # SIMPLE METRIC WITH CATEGORY FILTER
 generate_metricflow_results(mf_command='mf query --metrics food_orders', results_table='simple_metric_with_category_filter')
 
 generate_looker_results(explore='orders', fields=['orders.food_orders'], results_table='simple_metric_with_category_filter')
-do_query_results_match(results_table='simple_metric_with_category_filter', results_schema1='mf_query_results', results_schema2='lkr_query_results')
+do_query_results_match(results_query1='select * from mf_query_results.simple_metric_with_category_filter',
+                       results_query2='select * from lkr_query_results.simple_metric_with_category_filter')
 
 generate_cube_results(query={"measures": ["orders.food_orders"]}, results_table='simple_metric_with_category_filter')
-do_query_results_match(results_table='simple_metric_with_category_filter', results_schema1='mf_query_results', results_schema2='cube_query_results')  
+do_query_results_match(results_query1='select * from mf_query_results.simple_metric_with_category_filter',
+                       results_query2='select * from cube_query_results.simple_metric_with_category_filter')
+
+# %%
+# ROLLING TIME WINDOW METRIC
+generate_metricflow_results(mf_command="mf query --metrics orders_last_7_days --start-time '2016-09-01' --end-time '2016-09-30' --group-by metric_time --order metric_time", results_table='rolling_window_metric')
+
+# Native rolling time window metric is not supported in Looker :-( 
+
+generate_cube_results(query={"measures": ["orders.orders_last_7_days"], "timeDimensions": [{"dimension": "orders.ordered_at","granularity": "day","dateRange": [  "2016-09-01",  "2016-09-30"] } ],  "order": { "orders.ordered_at": "asc" }}, results_table='rolling_window_metric')
+do_query_results_match(results_query1='select cast(column_1 as datetime), column_2 from mf_query_results.rolling_window_metric',
+                       results_query2='select cast(orders_ordered_at_day as datetime), orders_orders_last_7_days from cube_query_results.rolling_window_metric')
+
 # %%
