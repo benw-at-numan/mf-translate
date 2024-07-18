@@ -13,7 +13,7 @@ cubes:
 
       - name: ordered_at
         type: time
-        sql: CAST(ordered_at as DATETIME)
+        sql: ordered_at
 
       - name: is_food_order
         type: string
@@ -31,3 +31,10 @@ cubes:
         sql: (1)
         filters:
           - sql: is_food_order = True
+
+      - name: orders_last_7_days
+        description: Count of orders.
+        type: sum
+        sql: (1)
+        rolling_window:
+            trailing: 7 day
