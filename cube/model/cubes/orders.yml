@@ -13,7 +13,7 @@ cubes:
 
       - name: ordered_at
         type: time
-        sql: ordered_at
+        sql: CAST(ordered_at as DATETIME)
 
       - name: is_food_order
         type: string

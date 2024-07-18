@@ -10,7 +10,7 @@ view: orders {
   dimension_group: ordered_at {
     type: time
     timeframes: [date]
-    sql: ${TABLE}.ordered_at ;;
+    sql: CAST(${TABLE}.ordered_at as DATETIME) ;;
   }
 
   dimension: is_food_order {}
