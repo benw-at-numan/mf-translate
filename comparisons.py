@@ -193,4 +193,8 @@ generate_metricflow_results(mf_command="mf query --metrics pc_drink_orders_for_r
 generate_looker_results(explore='orders', fields=['locations.location_name', 'orders.pc_drink_orders_for_returning_customers'], results_table='filtered_ratio_metric')
 do_query_results_match(results_query1='select * from mf_query_results.filtered_ratio_metric',
                        results_query2='select * from lkr_query_results.filtered_ratio_metric')
+
+generate_cube_results(query={"measures": ["orders.pc_drink_orders_for_returning_customers"], "dimensions": ["locations.location_name"]}, results_table='filtered_ratio_metric')
+do_query_results_match(results_query1='select column_1, round(column_2, 15) from mf_query_results.filtered_ratio_metric',
+                       results_query2='select locations_location_name, round(orders_pc_drink_orders_for_returning_customers, 15) from cube_query_results.filtered_ratio_metric')
 # %%
