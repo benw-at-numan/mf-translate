@@ -60,7 +60,6 @@ semantic_models:
         expr: customer_id
     dimensions:
       - name: ordered_at
-        expr: CAST(ordered_at as DATETIME)
         type: time
         type_params:
           time_granularity: day

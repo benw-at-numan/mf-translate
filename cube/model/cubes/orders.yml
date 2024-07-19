@@ -20,7 +20,10 @@ cubes:
 
       - name: ordered_at
         type: time
-        sql: ordered_at
+        # Cube requires a timestamp whereas DBT wants a datetime:
+          # - https://cube.dev/docs/guides/recipes/data-modeling/string-time-dimensions
+          # - https://github.com/dbt-labs/metricflow/issues/733
+        sql: TIMESTAMP(ordered_at, 'UTC') 
 
       - name: is_drink_order
         type: string
