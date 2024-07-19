@@ -72,8 +72,10 @@ def generate_looker_results(explore, fields, results_table):
 
     lkr_query = lkr_models.WriteQuery(model='dbt_slt', view=explore, fields=fields, limit=-1)
     response = lkr_sdk.run_inline_query("csv", lkr_query)
-
     df = pd.read_csv(StringIO(response))
+
+    # Clean column names
+    df.columns = [re.sub(r'[^a-zA-Z0-9_%]', '_', col) for col in df.columns]
 
     upload_dataframe_to_bigquery(dataframe=df,
                                  dataset='lkr_query_results',
@@ -96,7 +98,7 @@ def generate_cube_results(query, results_table):
       df = pd.DataFrame(data)
 
       # Clean column names
-      df.columns = [re.sub(r'[^a-zA-Z0-9_]', '_', col) for col in df.columns]
+      df.columns = [re.sub(r'[^a-zA-Z0-9_%]', '_', col) for col in df.columns]
 
       upload_dataframe_to_bigquery(dataframe=df,
                                    dataset='cube_query_results',
@@ -184,4 +186,11 @@ generate_cube_results(query={"measures": ["orders.orders_last_7_days"], "timeDim
 do_query_results_match(results_query1='select cast(column_1 as datetime), column_2 from mf_query_results.rolling_window_metric',
                        results_query2='select cast(orders_ordered_at_day as datetime), orders_orders_last_7_days from cube_query_results.rolling_window_metric')
 
+# %%
+# FILTERED RATIO METRIC
+generate_metricflow_results(mf_command="mf query --metrics pc_drink_orders_for_returning_customers --group-by location__location_name", results_table='filtered_ratio_metric')
+
+generate_looker_results(explore='orders', fields=['locations.location_name', 'orders.pc_drink_orders_for_returning_customers'], results_table='filtered_ratio_metric')
+do_query_results_match(results_query1='select * from mf_query_results.filtered_ratio_metric',
+                       results_query2='select * from lkr_query_results.filtered_ratio_metric')
 # %%
