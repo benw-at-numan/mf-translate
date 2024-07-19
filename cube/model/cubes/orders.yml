@@ -2,7 +2,14 @@ cubes:
   - name: orders
     sql_table: jaffle_shop.orders
 
-    joins: []
+    joins:
+      - name: customers
+        sql: ${orders}.customer_id = ${customers}.customer_id
+        relationship: many_to_one
+
+      - name: locations
+        sql: ${orders}.location_id = ${locations}.location_id
+        relationship: many_to_one
 
     dimensions:
 
@@ -14,6 +21,10 @@ cubes:
       - name: ordered_at
         type: time
         sql: ordered_at
+
+      - name: is_drink_order
+        type: string
+        sql: is_food_order
 
       - name: is_food_order
         type: string
@@ -38,3 +49,22 @@ cubes:
         sql: (1)
         rolling_window:
             trailing: 7 day
+
+      # PC_DRINK_ORDERS_FOR_RETURNING_CUSTOMERS
+      - name: pc_drink_orders_for_returning_customers_numerator
+        public: false
+        type: sum
+        sql: (1)
+        filters:
+          - sql: is_drink_order = True
+          - sql: customer_type = 'Returning'
+      - name: pc_drink_orders_for_returning_customers_denominator
+        public: false
+        type: sum
+        sql: (1)
+        filters:
+          - sql: customer_type = 'Returning'
+      - name: pc_drink_orders_for_returning_customers
+        description: Percentage of drink orders from returning customers.
+        type: number
+        sql: ${pc_drink_orders_for_returning_customers_numerator} / NULLIF(${pc_drink_orders_for_returning_customers_denominator}, 0)

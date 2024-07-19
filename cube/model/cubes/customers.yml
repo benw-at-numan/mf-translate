@@ -1,0 +1,16 @@
+cubes:
+  - name: customers
+    sql_table: jaffle_shop.customers
+
+    joins: []
+
+    dimensions:
+
+      - name: customer_id
+        type: string
+        primary_key: true
+        sql: customer_id
+
+      - name: customer_type
+        type: string
+        sql: customer_type

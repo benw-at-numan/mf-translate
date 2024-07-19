@@ -46,6 +46,7 @@ view: orders {
       ) ;;
   }
 
+  # PC_DRINK_ORDERS_FOR_RETURNING_CUSTOMERS
   measure: pc_drink_orders_for_returning_customers_numerator {
     hidden: yes
     type: number
