@@ -9,4 +9,12 @@ access_grant: has_dbt_slt_dev_access {
 
 explore: orders {
   required_access_grants: [has_dbt_slt_dev_access]
+
+  join: customers {
+    sql_on: ${orders.customer_id} = ${customers.customer_id} ;;
+  }
+
+  join: locations {
+    sql_on: ${orders.location_id} = ${locations.location_id} ;;
+  }
 }

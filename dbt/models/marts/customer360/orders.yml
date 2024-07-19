@@ -151,3 +151,16 @@ metrics:
     type_params:
       measure: order_count
       window: 7 days
+  - name: pc_drink_orders_for_returning_customers
+    description: Percentage of orders which are drink orders.
+    label: Drink orders for returning customers (%)
+    type: ratio
+    type_params:
+      numerator:
+        name: orders
+        alias: drink_orders
+        filter: |
+          {{ Dimension('order_id__is_drink_order') }} = true
+      denominator: orders
+    filter: |
+      {{ Dimension('customer__customer_type') }} = 'returning'

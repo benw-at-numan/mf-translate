@@ -21,15 +21,48 @@ view: orders {
     type: sum
   }
 
+  measure: orders {
+    description: "Count of orders"
+    label: "Orders"
+    type: sum
+    sql: (1) ;;
+  }
+
   measure: food_orders {
     description: "Count of orders that contain food order items"
     label: "Food Orders"
     type: number
     sql:
       sum(
-        case  when (${is_food_order} = true)
+        case when (${is_food_order} = true)
           then (1)
         end
       ) ;;
   }
-}
+
+  measure: pc_drink_orders_for_returning_customers_numerator {
+    hidden: yes
+    type: number
+    sql:
+      sum(
+        case when (${is_drink_order} = true) and (${customers.customer_type} = 'returning')
+          then (1)
+        end
+      ) ;;
+  }
+  measure: pc_drink_orders_for_returning_customers_denominator {
+    hidden: yes
+    type: number
+    sql:
+      sum(
+        case when (${customers.customer_type} = 'returning')
+          then (1)
+        end
+      ) ;;
+  }
+  measure: pc_drink_orders_for_returning_customers {
+    label: Drink orders for returning customers (%)
+    description: Percentage of orders which are drink orders.
+    type: number
+    sql: ${pc_drink_orders_for_returning_customers_numerator} / nullif(${pc_drink_orders_for_returning_customers_denominator}, 0) ;;
+  }
