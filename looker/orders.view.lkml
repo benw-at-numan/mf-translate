@@ -7,6 +7,10 @@ view: orders {
     primary_key: yes
   }
 
+  dimension: customer_id {}
+
+  dimension: location_id {}
+
   dimension_group: ordered_at {
     type: time
     timeframes: [date]
@@ -14,6 +18,8 @@ view: orders {
   }
 
   dimension: is_food_order {}
+
+  dimension: is_drink_order {}
 
   measure: order_total {
     label: "Order Total"
@@ -61,8 +67,9 @@ view: orders {
       ) ;;
   }
   measure: pc_drink_orders_for_returning_customers {
-    label: Drink orders for returning customers (%)
-    description: Percentage of orders which are drink orders.
+    label: "Drink orders for returning customers (%)"
+    description: "Percentage of orders which are drink orders."
     type: number
     sql: ${pc_drink_orders_for_returning_customers_numerator} / nullif(${pc_drink_orders_for_returning_customers_denominator}, 0) ;;
   }
+}

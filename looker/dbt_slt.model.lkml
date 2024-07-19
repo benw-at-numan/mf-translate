@@ -12,9 +12,11 @@ explore: orders {
 
   join: customers {
     sql_on: ${orders.customer_id} = ${customers.customer_id} ;;
+    relationship: many_to_one
   }
 
   join: locations {
     sql_on: ${orders.location_id} = ${locations.location_id} ;;
+    relationship: many_to_one
   }
 }
