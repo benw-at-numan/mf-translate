@@ -4,11 +4,11 @@ cubes:
 
     joins:
       - name: customers
-        sql: ${orders}.customer_id = ${customers}.customer_id
+        sql: "{orders}.customer_id = {customers}.customer_id"
         relationship: many_to_one
 
       - name: locations
-        sql: ${orders}.location_id = ${locations}.location_id
+        sql: "{orders}.location_id = {locations}.location_id"
         relationship: many_to_one
 
     dimensions:
@@ -24,7 +24,7 @@ cubes:
 
       - name: is_drink_order
         type: string
-        sql: is_food_order
+        sql: is_drink_order
 
       - name: is_food_order
         type: string
@@ -41,7 +41,7 @@ cubes:
         type: sum
         sql: (1)
         filters:
-          - sql: is_food_order = True
+          - sql: "{is_food_order} = True"
 
       - name: orders_last_7_days
         description: Count of orders.
@@ -56,15 +56,15 @@ cubes:
         type: sum
         sql: (1)
         filters:
-          - sql: is_drink_order = True
-          - sql: customer_type = 'Returning'
+          - sql: "{is_drink_order} = True"
+          - sql: "{customers.customer_type} = 'returning'"
       - name: pc_drink_orders_for_returning_customers_denominator
         public: false
         type: sum
         sql: (1)
         filters:
-          - sql: customer_type = 'Returning'
+          - sql: "{customers.customer_type} = 'returning'"
       - name: pc_drink_orders_for_returning_customers
         description: Percentage of drink orders from returning customers.
         type: number
-        sql: ${pc_drink_orders_for_returning_customers_numerator} / NULLIF(${pc_drink_orders_for_returning_customers_denominator}, 0)
+        sql: "{pc_drink_orders_for_returning_customers_numerator} / NULLIF({pc_drink_orders_for_returning_customers_denominator}, 0)"
