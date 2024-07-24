@@ -37,35 +37,29 @@ view: orders {
   measure: food_orders {
     description: "Count of orders that contain food order items"
     label: "Food Orders"
-    type: number
+    type: sum
     sql:
-      sum(
-        case when (${is_food_order} = true)
-          then (1)
-        end
-      ) ;;
+      case when (${is_food_order} = true)
+        then (1)
+      end ;;
   }
 
   # PC_DRINK_ORDERS_FOR_RETURNING_CUSTOMERS
   measure: pc_drink_orders_for_returning_customers_numerator {
     hidden: yes
-    type: number
+    type: sum
     sql:
-      sum(
-        case when (${is_drink_order} = true) and (${customers.customer_type} = 'returning')
-          then (1)
-        end
-      ) ;;
+      case when (${is_drink_order} = true) and (${customers.customer_type} = 'returning')
+        then (1)
+      end ;;
   }
   measure: pc_drink_orders_for_returning_customers_denominator {
     hidden: yes
-    type: number
+    type: sum
     sql:
-      sum(
-        case when (${customers.customer_type} = 'returning')
-          then (1)
-        end
-      ) ;;
+      case when (${customers.customer_type} = 'returning')
+        then (1)
+      end ;;
   }
   measure: pc_drink_orders_for_returning_customers {
     label: "Drink orders for returning customers (%)"
