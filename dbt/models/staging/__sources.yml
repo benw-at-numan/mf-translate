@@ -32,6 +32,10 @@ sources:
         description: One record per SKU for items sold in stores
       - name: raw_supplies
         description: One record per supply per SKU of items sold in stores
+      - name: raw_deliveries
+        description: One record per delivery of an order
+      - name: raw_delivery_people
+        description: One record per delivery person
   - name: conversion_sources
     schema: '{{ target.schema }}'
     description: Source data for conversion metrics
