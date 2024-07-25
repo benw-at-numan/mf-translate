@@ -12,11 +12,25 @@ explore: orders {
 
   join: customers {
     sql_on: ${orders.customer_id} = ${customers.customer_id} ;;
-    relationship: many_to_one
   }
 
   join: locations {
     sql_on: ${orders.location_id} = ${locations.location_id} ;;
-    relationship: many_to_one
+  }
+}
+
+explore: deliveries {
+  required_access_grants: [has_dbt_slt_dev_access]
+
+  join: delivery_people {
+    sql_on: ${deliveries.delivery_person_id} = ${delivery_people.delivery_person_id} ;;
+  }
+
+  join: orders {
+    sql_on: ${deliveries.order_id} = ${orders.order_id} ;;
+  }
+
+  join: customers {
+    sql_on: ${orders.customer_id} = ${customers.customer_id} ;;
   }
 }

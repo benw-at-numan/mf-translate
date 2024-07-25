@@ -17,6 +17,8 @@ view: orders {
     sql: CAST(${TABLE}.ordered_at as DATETIME) ;;
   }
 
+  dimension: discount_code {}
+
   dimension: is_food_order {}
 
   dimension: is_drink_order {}
