@@ -67,7 +67,7 @@ metrics:
     type_params:
       numerator:
         name: delivery_count
-        alias: fiver_star_deliveries
+        alias: five_star_deliveries_count
         filter: |
           {{ Dimension('delivery__delivery_rating') }} = 5
       denominator: delivery_count
