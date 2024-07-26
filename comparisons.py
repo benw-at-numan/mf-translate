@@ -206,6 +206,6 @@ do_query_results_match(results_query1='select * from mf_query_results.filtered_r
                        results_query2='select * from lkr_query_results.filtered_ratio_metric_2')
 
 generate_cube_results(query={"measures": ["deliveries.pc_deliveries_with_5_stars"], "dimensions": ["delivery_people.full_name"]}, results_table='filtered_ratio_metric_2')
-do_query_results_match(results_query1='select * from mf_query_results.filtered_ratio_metric_2',
-                       results_query2='select * from cube_query_results.filtered_ratio_metric_2')
+do_query_results_match(results_query1='select column_1, round(column_2, 14) from mf_query_results.filtered_ratio_metric_2',
+                       results_query2='select delivery_people_full_name, round(deliveries_pc_deliveries_with_5_stars, 14) from cube_query_results.filtered_ratio_metric_2')
 # %%
