@@ -33,14 +33,14 @@ def generate_metricflow_results(mf_command, results_table, bq_client, gcloud_pro
     mf_command = mf_command + f" --csv logs/{results_table}.csv"
 
     # Run the dbt command
-    result = subprocess.run(mf_command.split(), capture_output=True, text=True, cwd='test_environments/dbt/')
+    result = subprocess.run(mf_command.split(), capture_output=True, text=True, cwd='dbt/')
 
     # Check if the command was successful
     if result.returncode != 0:
         print(f"Error occurred while executing command: {result.stderr}")
 
     # Load the CSV file into a DataFrame
-    df = pd.read_csv(f'test_environments/dbt/logs/{results_table}.csv', header=None)
+    df = pd.read_csv(f'dbt/logs/{results_table}.csv', header=None)
 
     # Add column_1, column_2, etc column headers
     num_columns = df.shape[1]
