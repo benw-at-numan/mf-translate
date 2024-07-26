@@ -198,3 +198,14 @@ generate_cube_results(query={"measures": ["orders.pc_drink_orders_for_returning_
 do_query_results_match(results_query1='select column_1, round(column_2, 15) from mf_query_results.filtered_ratio_metric',
                        results_query2='select locations_location_name, round(orders_pc_drink_orders_for_returning_customers, 15) from cube_query_results.filtered_ratio_metric')
 # %%
+# FILTERED RATIO METRIC #2
+generate_metricflow_results(mf_command="mf query --metrics pc_deliveries_with_5_stars --group-by delivery_person__full_name", results_table='filtered_ratio_metric_2')
+
+generate_looker_results(explore='deliveries', fields=['delivery_people.full_name', 'deliveries.pc_deliveries_with_5_stars'], results_table='filtered_ratio_metric_2')
+do_query_results_match(results_query1='select * from mf_query_results.filtered_ratio_metric_2',
+                       results_query2='select * from lkr_query_results.filtered_ratio_metric_2')
+
+generate_cube_results(query={"measures": ["deliveries.pc_deliveries_with_5_stars"], "dimensions": ["delivery_people.full_name"]}, results_table='filtered_ratio_metric_2')
+do_query_results_match(results_query1='select * from mf_query_results.filtered_ratio_metric_2',
+                       results_query2='select * from cube_query_results.filtered_ratio_metric_2')
+# %%

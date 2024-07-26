@@ -1,0 +1,51 @@
+cubes:
+  - name: deliveries
+    sql_table: jaffle_shop.deliveries
+
+    joins:
+      - name: delivery_people
+        sql: "{deliveries}.delivery_person_id = {delivery_people}.delivery_person_id"
+
+      - name: orders
+        sql: "{deliveries}.order_id = {orders}.order_id"
+
+      - name: customers
+        sql: "{orders}.customer_id = {customers}.customer_id"
+
+    dimensions:
+    
+      - name: delivery_id
+        type: string
+        primary_key: true
+        sql: delivery_id
+
+      - name: delivered_at
+        type: time
+        # Cube requires a timestamp whereas DBT wants a datetime:
+          # - https://cube.dev/docs/guides/recipes/data-modeling/string-time-dimensions
+          # - https://github.com/dbt-labs/metricflow/issues/733
+        sql: TIMESTAMP(delivered_at, 'UTC')
+
+      - name: delivery_rating
+        type: number
+        sql: delivery_rating
+
+      - name: delivery_count
+        type: count
+
+      # PC_DELIVERIES_WITH_5_STARS
+      - name: pc_deliveries_with_5_stars_numerator
+        public: false
+        type: count
+        filters:
+          - sql: "{delivery_rating} = 5"
+          - sql: "coalesce({orders.discount_code}, 'NO_DISCOUNT') != 'STAFF_ORDER'"
+      - name: pc_deliveries_with_5_stars_denominator
+        public: false
+        type: count
+        filters:
+          - sql: "coalesce({orders.discount_code}, 'NO_DISCOUNT') != 'STAFF_ORDER'"
+      - name: pc_deliveries_with_5_stars
+        description: Percentage of deliveries that received a 5-star rating.
+        type: number
+        sql: "{pc_deliveries_with_5_stars_numerator} / NULLIF({pc_deliveries_with_5_stars_denominator}, 0)"
