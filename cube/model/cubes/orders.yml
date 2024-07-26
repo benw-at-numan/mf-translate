@@ -25,6 +25,10 @@ cubes:
           # - https://github.com/dbt-labs/metricflow/issues/733
         sql: TIMESTAMP(ordered_at, 'UTC') 
 
+      - name: discount_code
+        type: string
+        sql: discount_code
+
       - name: is_drink_order
         type: string
         sql: is_drink_order

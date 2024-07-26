@@ -5,15 +5,17 @@ cubes:
     joins:
       - name: delivery_people
         sql: "{deliveries}.delivery_person_id = {delivery_people}.delivery_person_id"
+        relationship: many_to_one
 
       - name: orders
         sql: "{deliveries}.order_id = {orders}.order_id"
+        relationship: one_to_one
 
       - name: customers
         sql: "{orders}.customer_id = {customers}.customer_id"
+        relationship: many_to_one
 
     dimensions:
-    
       - name: delivery_id
         type: string
         primary_key: true
@@ -30,19 +32,23 @@ cubes:
         type: number
         sql: delivery_rating
 
+    measures:
       - name: delivery_count
         type: count
+        sql: delivery_id
 
       # PC_DELIVERIES_WITH_5_STARS
       - name: pc_deliveries_with_5_stars_numerator
         public: false
         type: count
+        sql: delivery_id
         filters:
           - sql: "{delivery_rating} = 5"
           - sql: "coalesce({orders.discount_code}, 'NO_DISCOUNT') != 'STAFF_ORDER'"
       - name: pc_deliveries_with_5_stars_denominator
         public: false
         type: count
+        sql: delivery_id
         filters:
           - sql: "coalesce({orders.discount_code}, 'NO_DISCOUNT') != 'STAFF_ORDER'"
       - name: pc_deliveries_with_5_stars
