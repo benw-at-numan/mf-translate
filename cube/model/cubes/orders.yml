@@ -37,6 +37,10 @@ cubes:
         type: string
         sql: is_food_order
 
+      - name: is_large_order
+        type: string
+        sql: order_total > 20
+
     measures:
       - name: order_total
         description: Sum of total order amonunt. Includes tax + revenue.
@@ -49,6 +53,13 @@ cubes:
         sql: (1)
         filters:
           - sql: "{is_food_order} = True"
+
+      - name: large_orders
+        description: Count of orders with order total over 20.
+        type: sum
+        sql: (1)
+        filters:
+          - sql: "{is_large_order} = True"
 
       - name: orders_last_7_days
         description: Count of orders.

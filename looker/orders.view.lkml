@@ -13,8 +13,7 @@ view: orders {
 
   dimension_group: ordered_at {
     type: time
-    timeframes: [date]
-    sql: CAST(${TABLE}.ordered_at as DATETIME) ;;
+    timeframes: [date, week, month, quarter, year]
   }
 
   dimension: discount_code {}
@@ -22,6 +21,10 @@ view: orders {
   dimension: is_food_order {}
 
   dimension: is_drink_order {}
+
+  dimension: is_large_order {
+    sql: order_total > 20 ;;
+  }
 
   measure: order_total {
     label: "Order Total"
@@ -42,6 +45,15 @@ view: orders {
     type: sum
     sql:
       case when (${is_food_order} = true)
+        then (1)
+      end ;;
+  }
+
+  measure: large_orders {
+    description: "Count of orders with order total over 20."
+    type: sum
+    sql:
+      case when (${is_large_order} = true)
         then (1)
       end ;;
   }

@@ -132,7 +132,7 @@ saved_queries:
     query_params:
       metrics:
         - orders
-        - large_order
+        - large_orders
         - food_orders
         - order_total
       group_by:

@@ -19,7 +19,6 @@ view: deliveries {
   dimension_group: delivered_at {
     type: time
     timeframes: [date]
-    sql: CAST(${TABLE}.delivered_at as DATETIME) ;;
   }
 
   measure: delivery_count {
