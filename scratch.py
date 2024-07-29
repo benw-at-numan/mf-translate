@@ -7,7 +7,7 @@ import mf_translate.to_lkml as to_lkml
 with open('dbt/target/semantic_manifest.json') as f:
     semantic_manifest = json.load(f)
 
-lkml_view = {"views": [{"name": "test_view", "sql_table_name": "test_sql_table_name", "dimensions": []}]}
+lkml_view = {"views": [{"name": "test_view", "sql_table_name": "test_sql_table_name", "dimension_groups": [], "dimensions": []}]}
 
 for model in semantic_manifest['semantic_models']:
 
@@ -19,7 +19,10 @@ for model in semantic_manifest['semantic_models']:
     for dim in dimensions:
         lkml_dim = to_lkml.dimension_to_lkml(dim)
 
-        lkml_view['views'][0]['dimensions'].append(lkml_dim)
+        if lkml_dim['type'] == 'time':
+            lkml_view['views'][0]['dimension_groups'].append(lkml_dim)
+        else:
+            lkml_view['views'][0]['dimensions'].append(lkml_dim)
 
 
 print(lkml.dump(lkml_view))
