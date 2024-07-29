@@ -39,7 +39,7 @@ cubes:
 
       - name: is_large_order
         type: string
-        sql: order_total > 20
+        sql: (order_total > 20)
 
     measures:
       - name: order_total
