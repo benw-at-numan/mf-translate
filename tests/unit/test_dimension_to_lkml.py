@@ -1,6 +1,8 @@
 import mf_translate.to_lkml as to_lkml
 
-# def test_flag_primary_key_dimensions():
+def test_primary_key_dimension():
+
+    assert False
 
 # lkml parser will not accept keys with None values
 def test_only_non_null_keys_translated():
