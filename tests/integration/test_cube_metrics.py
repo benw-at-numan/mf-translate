@@ -1,7 +1,7 @@
 import pandas as pd
 from tests.integration.helpers import query_metricflow, query_cube, do_query_results_match
 
-def test_simple_looker_metric():
+def test_simple_looker_metric(setup_dbt):
 
     mf_results = query_metricflow(metrics=['order_total'])
     cube_results = query_cube(query={"measures": ["orders.order_total"]})
@@ -9,7 +9,7 @@ def test_simple_looker_metric():
     assert do_query_results_match(cube_results, mf_results)
 
 
-def test_cube_metric_with_category_filter():
+def test_cube_metric_with_category_filter(setup_dbt):
 
     mf_results = query_metricflow(metrics=['food_orders'])
     cube_results = query_cube(query={"measures": ["orders.food_orders"]})
@@ -17,7 +17,7 @@ def test_cube_metric_with_category_filter():
     assert do_query_results_match(cube_results, mf_results)
 
 
-def test_another_cube_metric_with_category_filter():
+def test_another_cube_metric_with_category_filter(setup_dbt):
 
     mf_results = query_metricflow(metrics=['large_orders'])
     cube_results = query_cube(query={"measures": ["orders.large_orders"]})
@@ -25,7 +25,7 @@ def test_another_cube_metric_with_category_filter():
     assert do_query_results_match(cube_results, mf_results)
 
 
-def test_filtered_ratio_cube_metric():
+def test_filtered_ratio_cube_metric(setup_dbt):
 
     mf_results = query_metricflow(metrics=['pc_drink_orders_for_returning_customers'],
                                   group_by=['location__location_name'],
@@ -42,7 +42,7 @@ def test_filtered_ratio_cube_metric():
     assert do_query_results_match(cube_results, mf_results)
 
 
-def test_another_filtered_ratio_cube_metric():
+def test_another_filtered_ratio_cube_metric(setup_dbt):
 
     mf_results = query_metricflow(metrics=['pc_deliveries_with_5_stars'],
                                   group_by=['delivery_person__full_name'],
@@ -60,7 +60,7 @@ def test_another_filtered_ratio_cube_metric():
     assert do_query_results_match(cube_results, mf_results)
 
 
-def test_rolling_time_window_cube_metric():
+def test_rolling_time_window_cube_metric(setup_dbt):
 
     mf_results = query_metricflow(metrics=['orders_last_7_days'],
                                   group_by=['metric_time'],

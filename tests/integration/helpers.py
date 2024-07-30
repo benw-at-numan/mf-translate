@@ -33,8 +33,6 @@ def query_metricflow(metrics, group_by=None, order_by=None, start_time=None, end
 
     # Run the dbt command
     result = subprocess.run(mf_command.split(), capture_output=True, text=True, cwd='dbt/')
-
-    # Check if the command was successful
     if result.returncode != 0:
         print(f"Error occurred while executing command: {result.stderr}")
 

@@ -1,6 +1,6 @@
 from tests.integration.helpers import query_metricflow, query_looker, do_query_results_match
 
-def test_simple_looker_metric(setup_looker_sdk):
+def test_simple_looker_metric(setup_dbt, setup_looker_sdk):
 
     mf_results = query_metricflow(metrics=['order_total'])
     lkr_results = query_looker(explore='orders',
@@ -30,7 +30,7 @@ def test_another_looker_metric_with_category_filter(setup_looker_sdk):
     assert do_query_results_match(lkr_results, mf_results)
 
 
-def test_filtered_ratio_looker_metric(setup_looker_sdk):
+def test_filtered_ratio_looker_metric(setup_dbt, setup_looker_sdk):
 
     mf_results = query_metricflow(metrics=['pc_drink_orders_for_returning_customers'],
                                   group_by=['location__location_name'],
@@ -45,7 +45,7 @@ def test_filtered_ratio_looker_metric(setup_looker_sdk):
     assert do_query_results_match(lkr_results, mf_results)
 
 
-def test_another_filtered_ratio_looker_metric(setup_looker_sdk):
+def test_another_filtered_ratio_looker_metric(setup_dbt, setup_looker_sdk):
 
     mf_results = query_metricflow(metrics=['pc_deliveries_with_5_stars'],
                                   group_by=['delivery_person__full_name'],
