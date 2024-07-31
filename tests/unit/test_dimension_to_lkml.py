@@ -1,9 +1,5 @@
 import mf_translate.to_lkml as to_lkml
 
-def test_primary_key_dimension():
-
-    assert False
-
 # lkml parser will not accept keys with None values
 def test_only_non_null_keys_translated():
 
@@ -11,6 +7,8 @@ def test_only_non_null_keys_translated():
         "name": "delivery_id",
         "description": None,
         "label": None,
+        "type": None,
+        "expr": None
     }
 
     lkml_dimension = to_lkml.dimension_to_lkml(mf_dimension)
@@ -18,6 +16,9 @@ def test_only_non_null_keys_translated():
     assert lkml_dimension["name"] == "delivery_id"
     assert 'description' not in lkml_dimension
     assert 'label' not in lkml_dimension
+    assert 'type' not in lkml_dimension
+    assert 'sql' not in lkml_dimension
+
 
 
 def test_category_dimension():

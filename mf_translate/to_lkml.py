@@ -1,3 +1,30 @@
+def entity_to_lkml(mf_entity):
+
+    lkml_dim = {}
+
+    # NAME
+    if mf_entity.get("name"):
+        lkml_dim["name"] = mf_entity["name"]
+
+    # DESCRIPTION
+    if mf_entity.get("description"):
+        lkml_dim["description"] = mf_entity["description"]
+
+
+    # PRIMARY KEY
+    if mf_entity.get("type") == 'primary':
+        lkml_dim["primary_key"] = True
+
+
+    # HIDDEN
+    lkml_dim["hidden"] = True
+
+    # SQL
+    if mf_entity.get("expr"):
+        lkml_dim["sql"] = mf_entity["expr"]
+
+    return lkml_dim
+
 def time_granularity_to_timeframes(time_granularity):
 
     time_granularities = ["day", "week", "month", "quarter", "year"]
@@ -16,7 +43,7 @@ def dimension_to_lkml(mf_dim):
         lkml_dim["name"] = mf_dim["name"]
 
     # DESCRIPTION
-    if mf_dim.get("description") is not None:
+    if mf_dim.get("description"):
         lkml_dim["description"] = mf_dim["description"]
 
     # LABEL
