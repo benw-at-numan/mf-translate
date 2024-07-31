@@ -1,3 +1,5 @@
+import re
+
 def entity_to_lkml(mf_entity):
 
     lkml_dim = {}
@@ -10,11 +12,9 @@ def entity_to_lkml(mf_entity):
     if mf_entity.get("description"):
         lkml_dim["description"] = mf_entity["description"]
 
-
     # PRIMARY KEY
     if mf_entity.get("type") == 'primary':
         lkml_dim["primary_key"] = True
-
 
     # HIDDEN
     lkml_dim["hidden"] = True
@@ -24,6 +24,7 @@ def entity_to_lkml(mf_entity):
         lkml_dim["sql"] = mf_entity["expr"]
 
     return lkml_dim
+
 
 def time_granularity_to_timeframes(time_granularity):
 
@@ -67,3 +68,25 @@ def dimension_to_lkml(mf_dim):
 
 
     return lkml_dim
+
+
+def dimension_ref_to_lkml(dimension_reference, semantic_models):
+
+    # Get entity for dimension
+    entity_name = dimension_reference.split('__')[0]
+
+    dimension_pattern = r"\{\{\s*Dimension\s*\(\s*'([^']+?)__([^']*?)'\s*\)\s*\}\}"
+    match = re.search(dimension_pattern, dimension_reference)
+    entity_name = match.group(1)
+
+    # Get model for entity
+    entity_model = None
+    for model in semantic_models:
+        for entity in model["entities"]:
+            if entity["name"] == entity_name:
+                entity_model = model
+                break
+
+    dimension_name = match.group(2)
+
+    return "${" + f"{entity_model['name']}.{dimension_name}" + "}"
