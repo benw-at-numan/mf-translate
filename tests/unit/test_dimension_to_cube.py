@@ -2,7 +2,7 @@ import mf_translate.to_cube as to_cube
 
 def test_only_non_null_keys_translated():
 
-    mf_dimension = {
+    dimension = {
         "name": "delivery_id",
         "description": None,
         "label": None,
@@ -10,7 +10,7 @@ def test_only_non_null_keys_translated():
         "expr": None
     }
 
-    cube_dimension = to_cube.dimension_to_cube(mf_dimension)
+    cube_dimension = to_cube.dimension_to_cube(dimension)
 
     assert cube_dimension["name"] == "delivery_id"
     assert 'description' not in cube_dimension
@@ -21,7 +21,7 @@ def test_only_non_null_keys_translated():
 
 def test_category_dimension():
 
-    mf_delivery_rating = {
+    delivery_rating = {
         "name": "delivery_rating",
         "description": "The rating the customer gave the delivery person.",
         "label": "Delivery Rating",
@@ -31,7 +31,7 @@ def test_category_dimension():
         "expr": None
     }
 
-    cube_delivery_rating = to_cube.dimension_to_cube(mf_delivery_rating)
+    cube_delivery_rating = to_cube.dimension_to_cube(delivery_rating)
 
     assert cube_delivery_rating["name"] == "delivery_rating"
     assert cube_delivery_rating["description"] == "The rating the customer gave the delivery person."
@@ -42,13 +42,13 @@ def test_category_dimension():
 
 def test_category_dim_with_expr():
 
-    mf_is_bulk_transaction = {
+    is_bulk_transaction = {
         "name": "is_bulk_transaction",
         "type": "categorical",
         "expr": "case when quantity > 10 then true else false end",
     }
 
-    cube_is_bulk_transaction = to_cube.dimension_to_cube(mf_is_bulk_transaction)
+    cube_is_bulk_transaction = to_cube.dimension_to_cube(is_bulk_transaction)
 
     assert cube_is_bulk_transaction["name"] == "is_bulk_transaction"
     assert cube_is_bulk_transaction["type"] == "string"
@@ -57,7 +57,7 @@ def test_category_dim_with_expr():
 
 def test_time_dimension_without_timezone():
 
-    mf_created_at = {
+    created_at = {
         "name": "created_at",
         "type": "time",
         "label": "Time of creation",
@@ -68,7 +68,7 @@ def test_time_dimension_without_timezone():
         }
     }
 
-    cube_created_at = to_cube.dimension_to_cube(mf_created_at)
+    cube_created_at = to_cube.dimension_to_cube(created_at)
 
     assert cube_created_at["name"] == "created_at"
     assert cube_created_at["type"] == "time"
@@ -80,7 +80,7 @@ def test_time_dimension_without_timezone():
 
 def test_time_dimension_with_timezone(monkeypatch):
 
-    mf_created_at = {
+    created_at = {
         "name": "created_at",
         "type": "time",
         "label": "Time of creation",
@@ -91,10 +91,10 @@ def test_time_dimension_with_timezone(monkeypatch):
         }
     }
 
-    monkeypatch.setenv('MF_TRANSLATE__TARGET_DATABASE', 'bigquery')
-    monkeypatch.setenv('MF_TRANSLATE_TO_CUBE__TIMEZONE_FOR_TIME_DIMENSIONS', 'America/Los_Angeles')
+    monkeypatch.setenv('TRANSLATE__TARGET_DATABASE', 'bigquery')
+    monkeypatch.setenv('TRANSLATE_TO_CUBE__TIMEZONE_FOR_TIME_DIMENSIONS', 'America/Los_Angeles')
 
-    cube_created_at = to_cube.dimension_to_cube(mf_created_at)
+    cube_created_at = to_cube.dimension_to_cube(created_at)
 
     assert cube_created_at["name"] == "created_at"
     assert cube_created_at["type"] == "time"
@@ -106,16 +106,16 @@ def test_time_dimension_with_timezone(monkeypatch):
 
 def test_time_dimension_with_timezone_2(monkeypatch):
 
-    mf_created_at = {
+    created_at = {
         "name": "created_at",
         "type": "time",
         "expr": "ts_created",
     }
 
-    monkeypatch.setenv('MF_TRANSLATE__TARGET_DATABASE', 'snowflake')
-    monkeypatch.setenv('MF_TRANSLATE_TO_CUBE__TIMEZONE_FOR_TIME_DIMENSIONS', 'America/Los_Angeles')
+    monkeypatch.setenv('TRANSLATE__TARGET_DATABASE', 'snowflake')
+    monkeypatch.setenv('TRANSLATE_TO_CUBE__TIMEZONE_FOR_TIME_DIMENSIONS', 'America/Los_Angeles')
 
-    cube_created_at = to_cube.dimension_to_cube(mf_created_at)
+    cube_created_at = to_cube.dimension_to_cube(created_at)
 
     assert cube_created_at["name"] == "created_at"
     assert cube_created_at["type"] == "time"

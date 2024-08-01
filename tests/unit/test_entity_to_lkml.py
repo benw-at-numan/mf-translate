@@ -2,14 +2,14 @@ import mf_translate.to_lkml as to_lkml
 
 def test_primary_key_entity():
 
-    mf_customer_entity = {
+    customer_entity = {
         "name": "customer",
         "description": "Customer identifier. Primary key.",
         "type": "primary",
         "expr": "customer_id"
     }
 
-    lkml_customer_dim = to_lkml.entity_to_lkml(mf_customer_entity)
+    lkml_customer_dim = to_lkml.entity_to_lkml(customer_entity)
 
     assert lkml_customer_dim["name"] == "customer"
     assert lkml_customer_dim["description"] == "Customer identifier. Primary key."
@@ -20,12 +20,12 @@ def test_primary_key_entity():
 
 def test_foreign_key_entity():
 
-    mf_order_entity = {
+    order_entity = {
         "name": "order_id",
         "type": "foreign",
     }
 
-    lkml_order_dim = to_lkml.entity_to_lkml(mf_order_entity)
+    lkml_order_dim = to_lkml.entity_to_lkml(order_entity)
 
     assert lkml_order_dim["name"] == "order_id"
     assert "primary_key" not in lkml_order_dim

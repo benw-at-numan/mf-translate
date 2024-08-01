@@ -1,27 +1,27 @@
 import re
 
-def entity_to_lkml(mf_entity):
+def entity_to_lkml(entity):
 
     lkml_dim = {}
 
     # NAME
-    if mf_entity.get("name"):
-        lkml_dim["name"] = mf_entity["name"]
+    if entity.get("name"):
+        lkml_dim["name"] = entity["name"]
 
     # DESCRIPTION
-    if mf_entity.get("description"):
-        lkml_dim["description"] = mf_entity["description"]
+    if entity.get("description"):
+        lkml_dim["description"] = entity["description"]
 
     # PRIMARY KEY
-    if mf_entity.get("type") == 'primary':
+    if entity.get("type") == 'primary':
         lkml_dim["primary_key"] = True
 
     # HIDDEN
     lkml_dim["hidden"] = True
 
     # SQL
-    if mf_entity.get("expr"):
-        lkml_dim["sql"] = mf_entity["expr"]
+    if entity.get("expr"):
+        lkml_dim["sql"] = entity["expr"]
 
     return lkml_dim
 
@@ -35,42 +35,41 @@ def time_granularity_to_timeframes(time_granularity):
     return timeframes[start_index:]
 
 
-def dimension_to_lkml(mf_dim):
+def dimension_to_lkml(dim):
 
     lkml_dim = {}
 
     # NAME
-    if mf_dim.get("name"):
-        lkml_dim["name"] = mf_dim["name"]
+    if dim.get("name"):
+        lkml_dim["name"] = dim["name"]
 
     # DESCRIPTION
-    if mf_dim.get("description"):
-        lkml_dim["description"] = mf_dim["description"]
+    if dim.get("description"):
+        lkml_dim["description"] = dim["description"]
 
     # LABEL
-    if mf_dim.get("label"):
-        lkml_dim["label"] = mf_dim["label"]
+    if dim.get("label"):
+        lkml_dim["label"] = dim["label"]
 
     # SQL
-    if mf_dim.get("expr"):
-        lkml_dim["sql"] = mf_dim["expr"]
+    if dim.get("expr"):
+        lkml_dim["sql"] = dim["expr"]
 
     # TYPE AND TIMEFRAMES
-    if mf_dim.get("type") == "categorical":
+    if dim.get("type") == "categorical":
         lkml_dim["type"] = "string"
 
-    elif mf_dim.get("type") == "time" and mf_dim.get("type_params") and mf_dim["type_params"].get("time_granularity"):
+    elif dim.get("type") == "time" and dim.get("type_params") and dim["type_params"].get("time_granularity"):
         lkml_dim["type"] = "time"
-        lkml_dim["timeframes"] = time_granularity_to_timeframes(mf_dim["type_params"]["time_granularity"])
+        lkml_dim["timeframes"] = time_granularity_to_timeframes(dim["type_params"]["time_granularity"])
 
-    elif mf_dim.get("type") == "time":
+    elif dim.get("type") == "time":
         lkml_dim["type"] = "date_time"
-
 
     return lkml_dim
 
 
-def filter_to_lkml(mf_filter, mf_models):
+def sql_expression_to_lkml(expression, models):
 
     dim_ref_pattern = r"\{\{\s*Dimension\s*\(\s*'([^']+?)'\s*\)\s*\}\}"
 
@@ -82,7 +81,7 @@ def filter_to_lkml(mf_filter, mf_models):
 
          # Get model for entity
         model_for_entity = None
-        for model in mf_models:
+        for model in models:
             for entity in model["entities"]:
                 if entity["name"] == entity_name:
                     model_for_entity = model
@@ -90,5 +89,63 @@ def filter_to_lkml(mf_filter, mf_models):
 
         return "${" + f"{model_for_entity['name']}.{dimension_name}" + "}"
 
-    
-    return re.sub(dim_ref_pattern, translate_dim_ref, mf_filter)
+
+    return re.sub(dim_ref_pattern, translate_dim_ref, expression.strip())
+
+
+def metric_to_lkml(metric, models):
+
+    lkml_metric = {}
+
+    # NAME
+    if metric.get("name"):
+        lkml_metric["name"] = metric["name"]
+
+    # LABEL
+    if metric.get("label"):
+        lkml_metric["label"] = metric["label"]
+
+    # DESCRIPTION
+    if metric.get("description"):
+        lkml_metric["description"] = metric["description"]
+
+    # TYPE
+    all_measures =[]
+    for model in models:
+        all_measures.extend(model["measures"])
+    measures_dict = {measure["name"]: measure for measure in all_measures}
+
+    if metric.get("type") == "simple":
+
+        measure_name = metric["type_params"]["measure"]["name"]
+        measure = measures_dict[measure_name]
+
+        if metric.get("filter"):
+            if metric["filter"].get("where_filters"):
+                where_filters = metric["filter"]["where_filters"]
+        else:
+            where_filters = []
+
+        if measure["agg"] == "count" and len(where_filters) > 0:
+            lkml_metric["type"] = "count_distinct"
+        else:
+            lkml_metric["type"] = measure["agg"]
+
+        # SQL
+        if measure["agg"] != "count":
+
+            if len(where_filters) == 0:
+                lkml_metric["sql"] = sql_expression_to_lkml(measure['expr'], models)
+
+            else:
+
+                for index, where_filter in enumerate(where_filters):
+                    if index == 0:
+                        lkml_metric["sql"] =  f'\n    case when ({sql_expression_to_lkml(where_filter["where_sql_template"], models)})'
+                    else:
+                        lkml_metric["sql"] += f'\n          and ({sql_expression_to_lkml(where_filter["where_sql_template"], models)})'
+
+                lkml_metric["sql"] +=         f'\n        then ({sql_expression_to_lkml(measure["expr"], models)})'
+                lkml_metric["sql"] +=          '\n    end'
+
+    return lkml_metric
