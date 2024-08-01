@@ -1,6 +1,7 @@
 import mf_translate.to_lkml as to_lkml
 
-def test_mf_dimension_ref_to_lookml():
+
+def test_filter_to_lookml():
 
     deliveries_model= {
         "name": "deliveries",
@@ -13,13 +14,14 @@ def test_mf_dimension_ref_to_lookml():
         ]
     }
 
-    mf_dim_ref = "{{ Dimension('delivery__delivery_rating') }}"
-    lkml_dim_ref = to_lkml.dimension_ref_to_lkml(dimension_reference=mf_dim_ref,
-                                                 semantic_models=[deliveries_model])
+    mf_filter = "{{Dimension('delivery__delivery_rating')}} = 5"
+    lkml_filter = to_lkml.filter_to_lkml(mf_filter=mf_filter,
+                                         mf_models=[deliveries_model])
 
-    assert lkml_dim_ref == "${deliveries.delivery_rating}"
+    assert lkml_filter == "${deliveries.delivery_rating} = 5"
 
-def test_mf_dimension_ref_to_lookml_2():
+
+def test_another_filter_to_lookml():
 
     orders_model = {
         "name": "orders",
@@ -32,9 +34,8 @@ def test_mf_dimension_ref_to_lookml_2():
         ]
     }
 
-    mf_dim_ref = "{{    Dimension(  'order_id__discount_code'  )}}"
-    lkml_dim_ref = to_lkml.dimension_ref_to_lkml(dimension_reference=mf_dim_ref,
-                                                 semantic_models=[orders_model])
+    mf_filter = "coalesce( {{ Dimension( 'order_id__discount_code'  ) }}, 'NO_DISCOUNT' ) != 'STAFF_ORDER'"
+    lkml_filter = to_lkml.filter_to_lkml(mf_filter=mf_filter,
+                                         mf_models=[orders_model])
 
-    assert lkml_dim_ref == "${orders.discount_code}"
-
+    assert lkml_filter == "coalesce( ${orders.discount_code}, 'NO_DISCOUNT' ) != 'STAFF_ORDER'"

@@ -70,23 +70,25 @@ def dimension_to_lkml(mf_dim):
     return lkml_dim
 
 
-def dimension_ref_to_lkml(dimension_reference, semantic_models):
+def filter_to_lkml(mf_filter, mf_models):
 
-    # Get entity for dimension
-    entity_name = dimension_reference.split('__')[0]
+    dim_ref_pattern = r"\{\{\s*Dimension\s*\(\s*'([^']+?)'\s*\)\s*\}\}"
 
-    dimension_pattern = r"\{\{\s*Dimension\s*\(\s*'([^']+?)__([^']*?)'\s*\)\s*\}\}"
-    match = re.search(dimension_pattern, dimension_reference)
-    entity_name = match.group(1)
+    def translate_dim_ref(match):
 
-    # Get model for entity
-    entity_model = None
-    for model in semantic_models:
-        for entity in model["entities"]:
-            if entity["name"] == entity_name:
-                entity_model = model
-                break
+        dim_inner_ref = match.group(1)                # 'Dimension('delivery__delivery_rating')' -> 'delivery__delivery_rating' 
+        entity_name = dim_inner_ref.split("__")[0]    # 'delivery__delivery_rating' -> 'delivery'
+        dimension_name = dim_inner_ref.split("__")[1] # 'delivery__delivery_rating' -> 'delivery_rating'
 
-    dimension_name = match.group(2)
+         # Get model for entity
+        model_for_entity = None
+        for model in mf_models:
+            for entity in model["entities"]:
+                if entity["name"] == entity_name:
+                    model_for_entity = model
+                    break
 
-    return "${" + f"{entity_model['name']}.{dimension_name}" + "}"
+        return "${" + f"{model_for_entity['name']}.{dimension_name}" + "}"
+
+    
+    return re.sub(dim_ref_pattern, translate_dim_ref, mf_filter)
