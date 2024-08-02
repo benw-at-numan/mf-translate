@@ -57,7 +57,7 @@ semantic_models:
       - name: delivery_count
         agg: count
         expr: delivery_id
-        create_metric: true
+        create_metric: false
 
 metrics:
   - name: pc_deliveries_with_5_stars
