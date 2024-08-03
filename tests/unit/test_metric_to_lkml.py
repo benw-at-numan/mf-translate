@@ -1,5 +1,6 @@
 import mf_translate.to_lkml as to_lkml
 import logging
+import re
 
 
 def test_filter_expression():
@@ -158,6 +159,14 @@ def test_another_simple_metric():
     assert lkml_measure["parent_view"] == "orders"
 
 
+def normalised_strings_equal(string1, string2):
+    # Replace multiple whitespace characters (including new lines) with a single space
+    normalised_string1 = re.sub(r'\s+', ' ', string1).strip()
+    normalised_string2 = re.sub(r'\s+', ' ', string2).strip()
+
+    return normalised_string1 == normalised_string2
+
+
 def test_metric_with_category_filter():
 
     large_order_count = {
@@ -208,10 +217,12 @@ def test_metric_with_category_filter():
     assert lkml_measure["type"] == "sum"
     assert lkml_measure["description"] == "Count of orders with order total over 20."
     assert lkml_measure["label"] == "Large Orders"
-    assert lkml_measure["sql"] == """
-    case when (${orders.is_large_order} = true)
-        then (1)
-    end"""
+    assert normalised_strings_equal(lkml_measure["sql"],
+                                    """
+                                    case when (${orders.is_large_order} = true)
+                                        then (1)
+                                    end
+                                    """)
     assert lkml_measure["parent_view"] == "orders"
 
 
@@ -267,11 +278,13 @@ def test_metric_with_multiple_category_filters():
     assert lkml_measure["type"] == "sum"
     assert lkml_measure["description"] == "Count of orders with order total over 20. Excludes staff orders."
     assert lkml_measure["label"] == "Large Orders"
-    assert lkml_measure["sql"] == """
-    case when (${orders.is_large_order} = true)
-          and (${orders.is_staff_order} = false)
-        then (1)
-    end"""
+    assert normalised_strings_equal(lkml_measure["sql"],
+                                    """
+                                    case when (${orders.is_large_order} = true)
+                                           and (${orders.is_staff_order} = false)
+                                        then (1)
+                                    end
+                                    """)
     assert lkml_measure["parent_view"] == "orders"
 
 
@@ -463,11 +476,13 @@ def test_filtered_ratio_metric():
     assert lkml_numerator["type"] == "count_distinct"
     assert 'description' not in lkml_numerator
     assert 'label' not in lkml_numerator
-    assert lkml_numerator["sql"] == """
-    case when (${deliveries.delivery_rating} = 5)
-          and (coalesce(${orders.discount_code}, 'NO_DISCOUNT') != 'STAFF_ORDER')
-        then (delivery_id)
-    end"""
+    assert normalised_strings_equal(lkml_numerator["sql"],
+                                    """
+                                    case when (${deliveries.delivery_rating} = 5)
+                                          and (coalesce(${orders.discount_code}, 'NO_DISCOUNT') != 'STAFF_ORDER')
+                                        then (delivery_id)
+                                    end
+                                    """)
     assert lkml_numerator["parent_view"] == "deliveries"
 
     lkml_denominator = lkml_pc_deliveries_with_5_stars[1]
@@ -476,10 +491,12 @@ def test_filtered_ratio_metric():
     assert lkml_denominator["type"] == "count_distinct"
     assert 'description' not in lkml_denominator
     assert 'label' not in lkml_denominator
-    assert lkml_denominator["sql"] == """
-    case when (coalesce(${orders.discount_code}, 'NO_DISCOUNT') != 'STAFF_ORDER')
-        then (delivery_id)
-    end"""
+    assert normalised_strings_equal(lkml_denominator["sql"],
+                                    """
+                                    case when (coalesce(${orders.discount_code}, 'NO_DISCOUNT') != 'STAFF_ORDER')
+                                        then (delivery_id)
+                                    end
+                                    """)
     assert lkml_denominator["parent_view"] == "deliveries"
 
     lkml_ratio = lkml_pc_deliveries_with_5_stars[2]

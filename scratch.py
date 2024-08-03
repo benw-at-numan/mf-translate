@@ -12,7 +12,7 @@ with open('dbt/target/semantic_manifest.json') as f:
     semantic_manifest = json.load(f)
 
 lkml_view = {
-    "name": "deliveries",
+    "name": "orders",
     "sql_table_name": "test_sql_table_name",
     "dimension_groups": [],
     "dimensions": [],

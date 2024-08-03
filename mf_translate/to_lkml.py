@@ -115,12 +115,12 @@ def measure_to_lkml_sql(measure, where_filters, models):
         # Incorporate metric's where filters into a SQL `case when` expression. So a filter `{{ Dimension('delivery_id__delivery_rating') }} = 5` becomes `case when (${deliveries.delivery_rating} = 5) then ... end`. An alternative would be to convert where filters to a lkml `filter: [..]`` statement, but this is more trouble than it's worth.
         for index, where_filter in enumerate(where_filters):
             if index == 0:
-                sql =  f'\n    case when ({sql_expression_to_lkml(where_filter["where_sql_template"], models)})'
+                sql =  f'case when ({sql_expression_to_lkml(where_filter["where_sql_template"], models)})'
             else:
-                sql += f'\n          and ({sql_expression_to_lkml(where_filter["where_sql_template"], models)})'
+                sql += f'\n               and ({sql_expression_to_lkml(where_filter["where_sql_template"], models)})'
 
-        sql +=         f'\n        then ({sql_expression_to_lkml(measure_expression, models)})'
-        sql +=          '\n    end'
+        sql +=         f'\n            then ({sql_expression_to_lkml(measure_expression, models)})'
+        sql +=          '\n         end'
 
     return sql
 
