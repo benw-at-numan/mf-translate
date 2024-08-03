@@ -1,4 +1,5 @@
 import mf_translate.to_lkml as to_lkml
+import logging
 
 
 def test_filter_expression():
@@ -107,6 +108,7 @@ def test_simple_metric():
     assert lkml_measure["description"] == "Metric created from measure delivery_count"
     assert lkml_measure["label"] == "delivery_count"
     assert "sql" not in lkml_measure
+    assert lkml_measure["parent_view"] == "deliveries"
 
 
 def test_another_simple_metric():
@@ -153,6 +155,7 @@ def test_another_simple_metric():
     assert lkml_measure["description"] == "Sum of total order amonunt. Includes tax + revenue."
     assert lkml_measure["label"] == "Order Total"
     assert lkml_measure["sql"] == "order_total"
+    assert lkml_measure["parent_view"] == "orders"
 
 
 def test_metric_with_category_filter():
@@ -197,7 +200,7 @@ def test_metric_with_category_filter():
     }
 
     lkml_large_order_count = to_lkml.metric_to_lkml_measures(metric=large_order_count,
-                                                    models=[orders_model])
+                                                             models=[orders_model])
 
     lkml_measure = lkml_large_order_count[0]
 
@@ -209,6 +212,7 @@ def test_metric_with_category_filter():
     case when (${orders.is_large_order} = true)
         then (1)
     end"""
+    assert lkml_measure["parent_view"] == "orders"
 
 
 def test_metric_with_multiple_category_filters():
@@ -268,6 +272,7 @@ def test_metric_with_multiple_category_filters():
           and (${orders.is_staff_order} = false)
         then (1)
     end"""
+    assert lkml_measure["parent_view"] == "orders"
 
 
 def test_ratio_metric():
@@ -343,7 +348,7 @@ def test_ratio_metric():
 
     lkml_food_revenue_pct = to_lkml.metric_to_lkml_measures(metric=food_revenue_pct,
                                                             models=[orders_model],
-                                                            parent_metrics=[food_revenue, revenue])
+                                                            metrics=[food_revenue_pct, food_revenue, revenue])
 
     lkml_numerator = lkml_food_revenue_pct[0]
     assert lkml_numerator["name"] == "food_revenue_pct_numerator"
@@ -352,6 +357,7 @@ def test_ratio_metric():
     assert 'description' not in lkml_numerator
     assert 'label' not in lkml_numerator
     assert lkml_numerator["sql"] == "case when is_food_item = 1 then product_price else 0 end"
+    assert lkml_numerator["parent_view"] == "orders"
 
     lkml_denominator = lkml_food_revenue_pct[1]
     assert lkml_denominator["name"] == "food_revenue_pct_denominator"
@@ -360,6 +366,7 @@ def test_ratio_metric():
     assert 'description' not in lkml_denominator
     assert 'label' not in lkml_denominator
     assert lkml_denominator["sql"] == "product_price"
+    assert lkml_denominator["parent_view"] == "orders"
 
     lkml_ratio = lkml_food_revenue_pct[2]
     assert lkml_ratio["name"] == "food_revenue_pct"
@@ -367,6 +374,7 @@ def test_ratio_metric():
     assert lkml_ratio["description"] == "The % of order revenue from food."
     assert lkml_ratio["label"] == "Food Revenue %"
     assert lkml_ratio["sql"] == "${food_revenue_pct_numerator} / nullif(${food_revenue_pct_denominator}, 0)"
+    assert lkml_ratio["parent_view"] == "orders"
 
 
 def test_filtered_ratio_metric():
@@ -447,7 +455,7 @@ def test_filtered_ratio_metric():
 
     lkml_pc_deliveries_with_5_stars = to_lkml.metric_to_lkml_measures(metric=pc_deliveries_with_5_stars,
                                                                       models=[deliveries_model, orders_model],
-                                                                      parent_metrics=[delivery_count])
+                                                                      metrics=[pc_deliveries_with_5_stars, delivery_count])
 
     lkml_numerator = lkml_pc_deliveries_with_5_stars[0]
     assert lkml_numerator["name"] == "pc_deliveries_with_5_stars_numerator"
@@ -460,6 +468,7 @@ def test_filtered_ratio_metric():
           and (coalesce(${orders.discount_code}, 'NO_DISCOUNT') != 'STAFF_ORDER')
         then (delivery_id)
     end"""
+    assert lkml_numerator["parent_view"] == "deliveries"
 
     lkml_denominator = lkml_pc_deliveries_with_5_stars[1]
     assert lkml_denominator["name"] == "pc_deliveries_with_5_stars_denominator"
@@ -471,6 +480,7 @@ def test_filtered_ratio_metric():
     case when (coalesce(${orders.discount_code}, 'NO_DISCOUNT') != 'STAFF_ORDER')
         then (delivery_id)
     end"""
+    assert lkml_denominator["parent_view"] == "deliveries"
 
     lkml_ratio = lkml_pc_deliveries_with_5_stars[2]
     assert lkml_ratio["name"] == "pc_deliveries_with_5_stars"
@@ -478,3 +488,165 @@ def test_filtered_ratio_metric():
     assert lkml_ratio["description"] == "Percentage of deliveries that received a 5-star rating."
     assert lkml_ratio["label"] == "Deliveries with 5 stars (%)"
     assert lkml_ratio["sql"] == "${pc_deliveries_with_5_stars_numerator} / nullif(${pc_deliveries_with_5_stars_denominator}, 0)"
+    assert lkml_ratio["parent_view"] == "deliveries"
+
+
+def test_ratio_metric_with_non_simple_numerator(caplog):
+
+    revenue = {
+        "name": "revenue",
+        "description": "Sum of the product revenue for each order item. Excludes tax.",
+        "type": "simple",
+        "type_params": {
+            "measure": {
+                "name": "revenue_measure",
+                "join_to_timespine": False,
+                "fill_nulls_with": 0
+            }
+        },
+        "label": "Revenue"
+    }
+
+    cumulative_revenue = {
+        "name": "cumulative_revenue",
+        "description": "The cumulative revenue for all orders.",
+        "type": "cumulative",
+        "type_params": {
+            "measure": {
+                "name": "revenue_measure",
+                "join_to_timespine": False
+            }
+        },
+        "label": "Cumulative Revenue (All Time)"
+    }
+
+    pc_revenue_of_total = {
+        "name": "pc_revenue_of_total",
+        "description": "The % of total revenue.",
+        "type": "ratio",
+        "type_params": {
+            "numerator": {
+                "name": "revenue",
+            },
+            "denominator": {
+                "name": "cumulative_revenue",
+            }
+        },
+        "label": "Revenue % of total"
+    }
+
+    orders_model = {
+        "name": "orders",
+        "entities": [
+            {
+                "name": "order_id",
+                "type": "primary",
+                "expr": "order_id"
+            }
+        ],
+        "measures": [
+            {
+                "name": "revenue_measure",
+                "agg": "sum",
+                "description": "The revenue generated for each order item. Revenue is calculated as a sum of revenue associated with each product in an order.",
+                "create_metric": False,
+                "expr": "product_price"
+            }
+        ]
+    }
+
+    with caplog.at_level(logging.WARNING):
+        to_lkml.metric_to_lkml_measures(metric=pc_revenue_of_total,
+                                        models=[orders_model],
+                                        metrics=[revenue, cumulative_revenue, pc_revenue_of_total])
+
+    assert any(record.levelname == 'WARNING'
+                and "non-simple denominator metrics are not currently supported." in record.message for record in caplog.records)
+
+
+def test_ratio_metric_with_numerator_and_denominator_from_different_models(caplog):
+
+    delivery_count = {
+        "name": "delivery_count",
+        "description": "Metric created from measure delivery_count",
+        "type": "simple",
+        "type_params": {
+            "measure": {
+                "name": "delivery_count_measure",
+                "join_to_timespine": False
+            }
+        },
+        "label": "delivery_count"
+    }
+
+    revenue = {
+        "name": "revenue",
+        "description": "Sum of the product revenue for each order item. Excludes tax.",
+        "type": "simple",
+        "type_params": {
+            "measure": {
+                "name": "revenue_measure",
+                "join_to_timespine": False,
+                "fill_nulls_with": 0
+            }
+        },
+        "label": "Revenue"
+    }
+
+    revenue_per_delivery = {
+        "name": "revenue_per_delivery",
+        "description": "The revenue per delivery.",
+        "type": "ratio",
+        "type_params": {
+            "numerator": { "name": "revenue" },
+            "denominator": { "name": "delivery_count" }
+        },
+        "label": "Revenue per Delivery"
+    }
+
+    deliveries_model = {
+        "name": "deliveries",
+        "entities": [
+            {
+                "name": "delivery",
+                "type": "primary",
+                "expr": "delivery_id"
+            }
+        ],
+        "measures": [
+            {
+                "name": "delivery_count_measure",
+                "agg": "count",
+                "create_metric": False,
+                "expr": "delivery_id"
+            }
+        ]
+    }
+
+    orders_model = {
+        "name": "orders",
+        "entities": [
+            {
+                "name": "order_id",
+                "type": "primary",
+                "expr": "order_id"
+            }
+        ],
+        "measures": [
+            {
+                "name": "revenue_measure",
+                "agg": "sum",
+                "description": "The revenue generated for each order item. Revenue is calculated as a sum of revenue associated with each product in an order.",
+                "create_metric": False,
+                "expr": "product_price"
+            }
+        ]
+    }
+
+    with caplog.at_level(logging.WARNING):
+        to_lkml.metric_to_lkml_measures(metric=revenue_per_delivery,
+                                        models=[deliveries_model, orders_model],
+                                        metrics=[delivery_count, revenue, revenue_per_delivery])
+
+    assert any(record.levelname == 'WARNING'
+                and "numerator and denominator from different models not currently supported." in record.message for record in caplog.records)

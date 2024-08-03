@@ -15,7 +15,7 @@ def entity_to_lkml(entity):
 
     # PRIMARY KEY
     if entity.get("type") == 'primary':
-        lkml_dim["primary_key"] = True
+        lkml_dim["primary_key"] = 'Yes'
 
     # HIDDEN
     lkml_dim["hidden"] = 'Yes'
@@ -101,6 +101,7 @@ def measure_to_lkml_type(measure, where_filters):
     else:
         return measure["agg"]
 
+
 def measure_to_lkml_sql(measure, where_filters, models):
 
     if measure["agg"] == "count" and len(where_filters) == 0:
@@ -126,7 +127,11 @@ def measure_to_lkml_sql(measure, where_filters, models):
 
 def simple_metric_to_lkml_measure(metric, models, additional_where_filters=[]):
 
-    measures_dict = {measure["name"]: measure for model in models for measure in model["measures"]}
+    measures_dict = {}
+    for model in models:
+        for measure in model["measures"]:
+            measures_dict[measure["name"]] = measure | {'parent_model': model['name']}
+
     measure = measures_dict[metric["type_params"]["measure"]["name"]]
 
     metric_where_filters = (metric.get("filter") or  {}).get("where_filters", [])
@@ -140,12 +145,14 @@ def simple_metric_to_lkml_measure(metric, models, additional_where_filters=[]):
     if sql:
         lkml_measure["sql"] = sql
 
+    lkml_measure["parent_view"] = measure["parent_model"]
+
     return lkml_measure
 
 
-def metric_to_lkml_measures(metric, models, parent_metrics=[]):
+def metric_to_lkml_measures(metric, models, metrics=[]):
 
-    parent_metrics_dict = {m["name"]: m for m in parent_metrics}
+    metrics_dict = {m["name"]: m for m in metrics}
 
     if metric["type"] in ["conversion", "cumulative", "derived"]:
         logging.warning(f"Skipped {metric['name']} - {metric['type']} metrics are not yet supported.")
@@ -171,7 +178,7 @@ def metric_to_lkml_measures(metric, models, parent_metrics=[]):
         # NUMERATOR
         numerator_params = metric["type_params"]["numerator"]
         numerator_where_filters = (numerator_params.get("filter") or  {}).get("where_filters", [])
-        numerator_metric = parent_metrics_dict[numerator_params["name"]]
+        numerator_metric = metrics_dict[numerator_params["name"]]
 
         if numerator_metric.get("type") != "simple":
             logging.warning(f"Ratio metric {metric['name']} has a non-simple numerator metric: {numerator_metric['name']}. This is not supported.")
@@ -186,10 +193,10 @@ def metric_to_lkml_measures(metric, models, parent_metrics=[]):
         # DENOMINATOR
         denominator_params = metric["type_params"]["denominator"]
         denominator_where_filters = (denominator_params.get("filter") or  {}).get("where_filters", [])
-        denominator_metric = parent_metrics_dict[denominator_params["name"]]
+        denominator_metric = metrics_dict[denominator_params["name"]]
 
         if denominator_metric.get("type") != "simple":
-            logging.warning(f"Ratio metric {metric['name']} has a non-simple denominator metric: {denominator_metric['name']}. This is not supported.")
+            logging.warning(f"Skipped ratio metric {metric['name']} - non-simple denominator metrics are not currently supported.")
             return []
 
         lkml_denominator = simple_metric_to_lkml_measure(metric=denominator_metric,
@@ -210,6 +217,12 @@ def metric_to_lkml_measures(metric, models, parent_metrics=[]):
             lkml_ratio["description"] = metric["description"]
 
         lkml_ratio["sql"] = f"${{{lkml_numerator['name']}}} / nullif(${{{lkml_denominator['name']}}}, 0)"
+
+        if lkml_numerator["parent_view"] != lkml_denominator["parent_view"]:
+            logging.warning(f"Skipped ratio metric {lkml_ratio['name']} - numerator and denominator from different models not currently supported.")
+            return []
+
+        lkml_ratio["parent_view"] = lkml_numerator["parent_view"]
 
         logging.info(f"Translated ratio metric {lkml_ratio['name']}.")
         return [lkml_numerator, lkml_denominator, lkml_ratio]
