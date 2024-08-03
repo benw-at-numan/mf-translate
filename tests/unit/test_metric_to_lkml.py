@@ -99,7 +99,7 @@ def test_simple_metric():
     }
 
 
-    lkml_delivery_count = to_lkml.metric_to_lkml_measures(metric=delivery_count,
+    lkml_delivery_count = to_lkml.metric_to_lkml_measures(target_metric=delivery_count,
                                                           models=[deliveries_model])
 
     lkml_measure = lkml_delivery_count[0]
@@ -147,7 +147,7 @@ def test_another_simple_metric():
         ]
     }
 
-    lkml_order_total = to_lkml.metric_to_lkml_measures(metric=order_total,
+    lkml_order_total = to_lkml.metric_to_lkml_measures(target_metric=order_total,
                                                        models=[orders_model])
 
     lkml_measure = lkml_order_total[0]
@@ -208,7 +208,7 @@ def test_metric_with_category_filter():
         ]
     }
 
-    lkml_large_order_count = to_lkml.metric_to_lkml_measures(metric=large_order_count,
+    lkml_large_order_count = to_lkml.metric_to_lkml_measures(target_metric=large_order_count,
                                                              models=[orders_model])
 
     lkml_measure = lkml_large_order_count[0]
@@ -270,7 +270,7 @@ def test_metric_with_multiple_category_filters():
         ]
     }
 
-    lkml_large_order_count = to_lkml.metric_to_lkml_measures(metric=large_order_count,
+    lkml_large_order_count = to_lkml.metric_to_lkml_measures(target_metric=large_order_count,
                                                              models=[orders_model])
 
     lkml_measure = lkml_large_order_count[0]
@@ -359,7 +359,7 @@ def test_ratio_metric():
         ]
     }
 
-    lkml_food_revenue_pct = to_lkml.metric_to_lkml_measures(metric=food_revenue_pct,
+    lkml_food_revenue_pct = to_lkml.metric_to_lkml_measures(target_metric=food_revenue_pct,
                                                             models=[orders_model],
                                                             metrics=[food_revenue_pct, food_revenue, revenue])
 
@@ -466,7 +466,7 @@ def test_filtered_ratio_metric():
         "measures": []
     }
 
-    lkml_pc_deliveries_with_5_stars = to_lkml.metric_to_lkml_measures(metric=pc_deliveries_with_5_stars,
+    lkml_pc_deliveries_with_5_stars = to_lkml.metric_to_lkml_measures(target_metric=pc_deliveries_with_5_stars,
                                                                       models=[deliveries_model, orders_model],
                                                                       metrics=[pc_deliveries_with_5_stars, delivery_count])
 
@@ -573,7 +573,7 @@ def test_ratio_metric_with_non_simple_numerator(caplog):
     }
 
     with caplog.at_level(logging.WARNING):
-        to_lkml.metric_to_lkml_measures(metric=pc_revenue_of_total,
+        to_lkml.metric_to_lkml_measures(target_metric=pc_revenue_of_total,
                                         models=[orders_model],
                                         metrics=[revenue, cumulative_revenue, pc_revenue_of_total])
 
@@ -661,7 +661,7 @@ def test_ratio_metric_with_numerator_and_denominator_from_different_models(caplo
     }
 
     with caplog.at_level(logging.WARNING):
-        to_lkml.metric_to_lkml_measures(metric=revenue_per_delivery,
+        to_lkml.metric_to_lkml_measures(target_metric=revenue_per_delivery,
                                         models=[deliveries_model, orders_model],
                                         metrics=[delivery_count, revenue, revenue_per_delivery])
 

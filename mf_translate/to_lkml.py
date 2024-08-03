@@ -6,8 +6,7 @@ def entity_to_lkml(entity):
     lkml_dim = {}
 
     # NAME
-    if entity.get("name"):
-        lkml_dim["name"] = entity["name"]
+    lkml_dim["name"] = entity["name"]
 
     # DESCRIPTION
     if entity.get("description"):
@@ -150,71 +149,71 @@ def simple_metric_to_lkml_measure(metric, models, additional_where_filters=[]):
     return lkml_measure
 
 
-def metric_to_lkml_measures(metric, models, metrics=[]):
+def metric_to_lkml_measures(target_metric, models, metrics=[]):
 
     metrics_dict = {m["name"]: m for m in metrics}
 
-    if metric["type"] in ["conversion", "cumulative", "derived"]:
-        logging.warning(f"Skipped {metric['name']} - {metric['type']} metrics are not yet supported.")
+    if target_metric["type"] in ["conversion", "cumulative", "derived"]:
+        logging.warning(f"Skipped {target_metric['name']} - {target_metric['type']} metrics are not yet supported.")
         return []
 
-    elif metric.get("type") == "simple":
+    elif target_metric["type"] == "simple":
 
-        lkml_measure = simple_metric_to_lkml_measure(metric, models)
+        lkml_measure = simple_metric_to_lkml_measure(target_metric, models)
 
-        if metric.get("label"):
-            lkml_measure["label"] = metric["label"]
+        if target_metric.get("label"):
+            lkml_measure["label"] = target_metric["label"]
 
-        if metric.get("description"):
-            lkml_measure["description"] = metric["description"]
+        if target_metric.get("description"):
+            lkml_measure["description"] = target_metric["description"]
 
         logging.info(f"Translated simple metric {lkml_measure['name']}.") 
         return [lkml_measure]
 
-    elif metric.get("type") == "ratio":
+    elif target_metric["type"] == "ratio":
 
-        metric_where_filters = (metric.get("filter") or  {}).get("where_filters", [])
+        metric_where_filters = (target_metric.get("filter") or  {}).get("where_filters", [])
 
         # NUMERATOR
-        numerator_params = metric["type_params"]["numerator"]
+        numerator_params = target_metric["type_params"]["numerator"]
         numerator_where_filters = (numerator_params.get("filter") or  {}).get("where_filters", [])
         numerator_metric = metrics_dict[numerator_params["name"]]
 
         if numerator_metric.get("type") != "simple":
-            logging.warning(f"Ratio metric {metric['name']} has a non-simple numerator metric: {numerator_metric['name']}. This is not supported.")
+            logging.warning(f"Ratio metric {target_metric['name']} has a non-simple numerator metric: {numerator_metric['name']}. This is not supported.")
             return []
 
         lkml_numerator = simple_metric_to_lkml_measure(metric=numerator_metric,
                                                        models=models,
                                                        additional_where_filters=numerator_where_filters + metric_where_filters)       
-        lkml_numerator["name"] = f"{metric['name']}_numerator"
+        lkml_numerator["name"] = f"{target_metric['name']}_numerator"
         lkml_numerator["hidden"] = 'Yes'
 
         # DENOMINATOR
-        denominator_params = metric["type_params"]["denominator"]
+        denominator_params = target_metric["type_params"]["denominator"]
         denominator_where_filters = (denominator_params.get("filter") or  {}).get("where_filters", [])
         denominator_metric = metrics_dict[denominator_params["name"]]
 
         if denominator_metric.get("type") != "simple":
-            logging.warning(f"Skipped ratio metric {metric['name']} - non-simple denominator metrics are not currently supported.")
+            logging.warning(f"Skipped ratio metric {target_metric['name']} - non-simple denominator metrics are not currently supported.")
             return []
 
         lkml_denominator = simple_metric_to_lkml_measure(metric=denominator_metric,
                                                          models=models,
                                                          additional_where_filters=denominator_where_filters + metric_where_filters)
-        lkml_denominator["name"] = f"{metric['name']}_denominator"
+        lkml_denominator["name"] = f"{target_metric['name']}_denominator"
         lkml_denominator["hidden"] = 'Yes'
 
         # RATIO
         lkml_ratio = {}
-        lkml_ratio["name"] = metric["name"]
+        lkml_ratio["name"] = target_metric["name"]
         lkml_ratio["type"] = "number"
 
-        if metric.get("label"):
-            lkml_ratio["label"] = metric["label"]
+        if target_metric.get("label"):
+            lkml_ratio["label"] = target_metric["label"]
 
-        if metric.get("description"):
-            lkml_ratio["description"] = metric["description"]
+        if target_metric.get("description"):
+            lkml_ratio["description"] = target_metric["description"]
 
         lkml_ratio["sql"] = f"${{{lkml_numerator['name']}}} / nullif(${{{lkml_denominator['name']}}}, 0)"
 
@@ -226,3 +225,42 @@ def metric_to_lkml_measures(metric, models, metrics=[]):
 
         logging.info(f"Translated ratio metric {lkml_ratio['name']}.")
         return [lkml_numerator, lkml_denominator, lkml_ratio]
+
+
+def model_to_sql_table_name(model):
+
+    return model["node_relation"]["relation_name"]
+
+
+def model_to_lkml_view(target_model, metrics, models):
+
+    lkml_view = {
+        "name": target_model['name'],
+        "sql_table_name": model_to_sql_table_name(target_model),
+        "dimension_groups": [],
+        "dimensions": [],
+        "measures": []
+    }
+
+    for entity in target_model['entities']:
+        lkml_dim = entity_to_lkml(entity)
+        lkml_view['dimensions'].append(lkml_dim)
+
+    for dim in target_model['dimensions']:
+        lkml_dim = dimension_to_lkml(dim)
+
+        if lkml_dim['type'] == 'time':
+            lkml_view['dimension_groups'].append(lkml_dim)
+        else:
+            lkml_view['dimensions'].append(lkml_dim)
+
+    for target_metric in metrics:
+
+        lkml_measures = metric_to_lkml_measures(target_metric, models, metrics)
+
+        for lkml_measure in lkml_measures:
+            if lkml_measure['parent_view'] == lkml_view['name']:
+                del lkml_measure['parent_view']
+                lkml_view['measures'].append(lkml_measure)
+
+    return lkml_view

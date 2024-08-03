@@ -17,9 +17,8 @@ semantic_models:
       Delivery people dimension table.
     model: ref('delivery_people')
     entities:
-      - name: delivery_person
+      - name: delivery_person_id
         type: primary
-        expr: delivery_person_id
     dimensions:
       - name: full_name
         type: categorical

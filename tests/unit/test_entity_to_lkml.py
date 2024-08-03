@@ -32,3 +32,18 @@ def test_foreign_key_entity():
     assert "primary_key" not in lkml_order_dim
     assert lkml_order_dim["hidden"] == 'Yes'
     assert "sql" not in lkml_order_dim
+
+def test_foreign_key_entity_with_custom_sql():
+
+    order_entity = {
+        "name": "delivery_person_id",
+        "type": "foreign",
+        "expr": "delivery_man_id"
+    }
+
+    lkml_order_dim = to_lkml.entity_to_lkml(order_entity)
+
+    assert lkml_order_dim["name"] == "delivery_person_id"
+    assert "primary_key" not in lkml_order_dim
+    assert lkml_order_dim["hidden"] == 'Yes'
+    assert lkml_order_dim["sql"] == "delivery_man_id"

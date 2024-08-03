@@ -138,9 +138,9 @@ saved_queries:
       group_by:
         - Entity('order_id')
         - TimeDimension('metric_time', 'day')
-        - Dimension('customer__customer_name')
-        - Dimension('customer__customer_type')
-        - TimeDimension('customer__first_ordered_at', 'day')
+        - Dimension('customer_id__customer_name')
+        - Dimension('customer_id__customer_type')
+        - TimeDimension('customer_id__first_ordered_at', 'day')
     exports:
       - name: order_data_key_metrics
         config:

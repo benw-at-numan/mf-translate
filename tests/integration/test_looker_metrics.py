@@ -48,7 +48,7 @@ def test_filtered_ratio_looker_metric(setup_dbt, setup_looker_sdk):
 def test_another_filtered_ratio_looker_metric(setup_dbt, setup_looker_sdk):
 
     mf_results = query_metricflow(metrics=['pc_deliveries_with_5_stars'],
-                                  group_by=['delivery_person__full_name'],
+                                  group_by=['delivery_person_id__full_name'],
                                   order_by=['-pc_deliveries_with_5_stars'])
 
     lkr_results = query_looker(explore='deliveries',

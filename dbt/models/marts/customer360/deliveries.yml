@@ -37,14 +37,12 @@ semantic_models:
       Delivery fact table. This table is at the delivery grain with one row per delivery.
     model: ref('deliveries')
     entities:
-      - name: delivery
+      - name: delivery_id
         type: primary
-        expr: delivery_id
       - name: order_id
         type: foreign
-      - name: delivery_person
+      - name: delivery_person_id
         type: foreign
-        expr: delivery_person_id
     dimensions:
       - name: delivered_at
         type: time
@@ -69,7 +67,7 @@ metrics:
         name: delivery_count
         alias: five_star_deliveries_count
         filter: |
-          {{ Dimension('delivery__delivery_rating') }} = 5
+          {{ Dimension('delivery_id__delivery_rating') }} = 5
       denominator: delivery_count
     filter: |
       coalesce({{ Dimension('order_id__discount_code') }}, 'NO_DISCOUNT') != 'STAFF_ORDER'

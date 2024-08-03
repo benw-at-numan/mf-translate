@@ -45,7 +45,7 @@ def test_filtered_ratio_cube_metric(setup_dbt):
 def test_another_filtered_ratio_cube_metric(setup_dbt):
 
     mf_results = query_metricflow(metrics=['pc_deliveries_with_5_stars'],
-                                  group_by=['delivery_person__full_name'],
+                                  group_by=['delivery_person_id__full_name'],
                                   order_by=['-pc_deliveries_with_5_stars'])
 
     mf_results['column_2'] = mf_results['column_2'].round(15)

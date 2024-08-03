@@ -54,10 +54,10 @@ semantic_models:
     entities:
       - name: order_id
         type: primary
-      - name: location
+      - name: location_id
         type: foreign
         expr: location_id
-      - name: customer
+      - name: customer_id
         type: foreign
         expr: customer_id
     dimensions:
@@ -167,4 +167,4 @@ metrics:
           {{ Dimension('order_id__is_drink_order') }} = true
       denominator: orders
     filter: |
-      {{ Dimension('customer__customer_type') }} = 'returning'
+      {{ Dimension('customer_id__customer_type') }} = 'returning'
