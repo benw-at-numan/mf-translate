@@ -72,14 +72,7 @@ def test_simple_metric():
                 "name": "delivery_count",
                 "join_to_timespine": False,
             },
-            "expr": "delivery_count",
-            "metrics": [],
-            "input_measures": [
-                {
-                    "name": "delivery_count",
-                    "join_to_timespine": False,
-                }
-            ]
+            "expr": "delivery_count"
         },
         "label": "delivery_count"
     }
@@ -105,15 +98,15 @@ def test_simple_metric():
 
 
     lkml_delivery_count = to_lkml.metric_to_lkml_measures(metric=delivery_count,
-                                                 models=[deliveries_model])
+                                                          models=[deliveries_model])
 
     lkml_measure = lkml_delivery_count[0]
 
     assert lkml_measure["name"] == "delivery_count"
     assert lkml_measure["type"] == "count"
-    "description" not in lkml_measure
-    "label" not in lkml_measure
-    "sql" not in lkml_measure
+    assert lkml_measure["description"] == "Metric created from measure delivery_count"
+    assert lkml_measure["label"] == "delivery_count"
+    assert "sql" not in lkml_measure
 
 
 def test_another_simple_metric():
@@ -126,14 +119,7 @@ def test_another_simple_metric():
             "measure": {
                 "name": "order_total",
                 "join_to_timespine": False
-            },
-            "metrics": [],
-            "input_measures": [
-                {
-                    "name": "order_total",
-                    "join_to_timespine": False
-                }
-            ]
+            }
         },
         "label": "Order Total"
     }
@@ -179,14 +165,7 @@ def test_metric_with_category_filter():
             "measure": {
                 "name": "order_count",
                 "join_to_timespine": False
-            },
-            "metrics": [],
-            "input_measures": [
-                {
-                    "name": "order_count",
-                    "join_to_timespine": False
-                }
-            ]
+            }
         },
         "filter": {
             "where_filters": [
@@ -231,6 +210,7 @@ def test_metric_with_category_filter():
         then (1)
     end"""
 
+
 def test_metric_with_multiple_category_filters():
 
     large_order_count = {
@@ -241,14 +221,7 @@ def test_metric_with_multiple_category_filters():
             "measure": {
                 "name": "order_count",
                 "join_to_timespine": False
-            },
-            "metrics": [],
-            "input_measures": [
-                {
-                    "name": "order_count",
-                    "join_to_timespine": False
-                }
-            ]
+            }
         },
         "filter": {
             "where_filters": [
@@ -309,21 +282,36 @@ def test_ratio_metric():
             },
             "denominator": {
                 "name": "revenue"
-            },
-            "metrics": [],
-            "input_measures": [
-                {
-                    "name": "food_revenue",
-                    "join_to_timespine": False
-                },
-                {
-                    "name": "revenue",
-                    "join_to_timespine": False,
-                    "fill_nulls_with": 0
-                }
-            ]
+            }
         },
         "label": "Food Revenue %"
+    }
+
+    food_revenue = {
+        "name": "food_revenue",
+        "description": "The revenue from food in each order",
+        "type": "simple",
+        "type_params": {
+            "measure": {
+                "name": "food_revenue_measure",
+                "join_to_timespine": False
+            }
+        },
+        "label": "Food Revenue"
+    }
+
+    revenue = {
+        "name": "revenue",
+        "description": "Sum of the product revenue for each order item. Excludes tax.",
+        "type": "simple",
+        "type_params": {
+            "measure": {
+                "name": "revenue_measure",
+                "join_to_timespine": False,
+                "fill_nulls_with": 0
+            }
+        },
+        "label": "Revenue"
     }
 
     orders_model = {
@@ -337,14 +325,14 @@ def test_ratio_metric():
         ],
         "measures": [
             {
-                "name": "revenue",
+                "name": "revenue_measure",
                 "agg": "sum",
                 "description": "The revenue generated for each order item. Revenue is calculated as a sum of revenue associated with each product in an order.",
                 "create_metric": False,
                 "expr": "product_price"
             },
             {
-                "name": "food_revenue",
+                "name": "food_revenue_measure",
                 "agg": "sum",
                 "description": "The food revenue generated for each order item. Revenue is calculated as a sum of revenue associated with each food product in an order.",
                 "create_metric": False,
@@ -354,20 +342,23 @@ def test_ratio_metric():
     }
 
     lkml_food_revenue_pct = to_lkml.metric_to_lkml_measures(metric=food_revenue_pct,
-                                                            models=[orders_model])
+                                                            models=[orders_model],
+                                                            parent_metrics=[food_revenue, revenue])
 
     lkml_numerator = lkml_food_revenue_pct[0]
     assert lkml_numerator["name"] == "food_revenue_pct_numerator"
-    assert lkml_numerator["hidden"] == True
+    assert lkml_numerator["hidden"] == 'Yes'
     assert lkml_numerator["type"] == "sum"
-    assert lkml_numerator["description"] == "The food revenue generated for each order item. Revenue is calculated as a sum of revenue associated with each food product in an order."
+    assert 'description' not in lkml_numerator
+    assert 'label' not in lkml_numerator
     assert lkml_numerator["sql"] == "case when is_food_item = 1 then product_price else 0 end"
 
     lkml_denominator = lkml_food_revenue_pct[1]
     assert lkml_denominator["name"] == "food_revenue_pct_denominator"
-    assert lkml_denominator["hidden"] == True
+    assert lkml_denominator["hidden"] == 'Yes'
     assert lkml_denominator["type"] == "sum"
-    assert lkml_denominator["description"] == "The revenue generated for each order item. Revenue is calculated as a sum of revenue associated with each product in an order."
+    assert 'description' not in lkml_denominator
+    assert 'label' not in lkml_denominator
     assert lkml_denominator["sql"] == "product_price"
 
     lkml_ratio = lkml_food_revenue_pct[2]
@@ -398,14 +389,7 @@ def test_filtered_ratio_metric():
             },
             "denominator": {
                 "name": "delivery_count",
-            },
-            "metrics": [],
-            "input_measures": [
-                {
-                    "name": "delivery_count",
-                    "join_to_timespine": False
-                }
-            ]
+            }
         },
         "filter": {
             "where_filters": [
@@ -415,6 +399,19 @@ def test_filtered_ratio_metric():
             ]
         },
         "label": "Deliveries with 5 stars (%)"
+    }
+
+    delivery_count = {
+        "name": "delivery_count",
+        "description": "Metric created from measure delivery_count",
+        "type": "simple",
+        "type_params": {
+            "measure": {
+                "name": "delivery_count_measure",
+                "join_to_timespine": False
+            }
+        },
+        "label": "delivery_count"
     }
 
     deliveries_model = {
@@ -428,7 +425,7 @@ def test_filtered_ratio_metric():
         ],
         "measures": [
             {
-                "name": "delivery_count",
+                "name": "delivery_count_measure",
                 "agg": "count",
                 "create_metric": False,
                 "expr": "delivery_id"
@@ -449,13 +446,15 @@ def test_filtered_ratio_metric():
     }
 
     lkml_pc_deliveries_with_5_stars = to_lkml.metric_to_lkml_measures(metric=pc_deliveries_with_5_stars,
-                                                                      models=[deliveries_model, orders_model])
+                                                                      models=[deliveries_model, orders_model],
+                                                                      parent_metrics=[delivery_count])
 
     lkml_numerator = lkml_pc_deliveries_with_5_stars[0]
     assert lkml_numerator["name"] == "pc_deliveries_with_5_stars_numerator"
-    assert lkml_numerator["hidden"] == True
+    assert lkml_numerator["hidden"] == 'Yes'
     assert lkml_numerator["type"] == "count_distinct"
     assert 'description' not in lkml_numerator
+    assert 'label' not in lkml_numerator
     assert lkml_numerator["sql"] == """
     case when (${deliveries.delivery_rating} = 5)
           and (coalesce(${orders.discount_code}, 'NO_DISCOUNT') != 'STAFF_ORDER')
@@ -464,9 +463,10 @@ def test_filtered_ratio_metric():
 
     lkml_denominator = lkml_pc_deliveries_with_5_stars[1]
     assert lkml_denominator["name"] == "pc_deliveries_with_5_stars_denominator"
-    assert lkml_denominator["hidden"] == True
+    assert lkml_denominator["hidden"] == 'Yes'
     assert lkml_denominator["type"] == "count_distinct"
     assert 'description' not in lkml_denominator
+    assert 'label' not in lkml_denominator
     assert lkml_denominator["sql"] == """
     case when (coalesce(${orders.discount_code}, 'NO_DISCOUNT') != 'STAFF_ORDER')
         then (delivery_id)
