@@ -56,10 +56,7 @@ def dimension_to_lkml(dim):
         lkml_dim["sql"] = dim["expr"]
 
     # TYPE AND TIMEFRAMES
-    if dim.get("type") == "categorical":
-        lkml_dim["type"] = "string"
-
-    elif dim.get("type") == "time" and dim.get("type_params") and dim["type_params"].get("time_granularity"):
+    if dim.get("type") == "time" and dim.get("type_params") and dim["type_params"].get("time_granularity"):
         lkml_dim["type"] = "time"
         lkml_dim["timeframes"] = time_granularity_to_timeframes(dim["type_params"]["time_granularity"])
 
@@ -164,7 +161,7 @@ def metric_to_lkml_measures(target_metric, models, metrics=[]):
         if target_metric.get("label"):
             lkml_measure["label"] = target_metric["label"]
 
-        if target_metric.get("description"):
+        if target_metric.get("description") != f"Metric created from measure {target_metric['name']}":
             lkml_measure["description"] = target_metric["description"]
 
         logging.info(f"Translated simple metric {lkml_measure['name']}.") 
@@ -249,7 +246,7 @@ def model_to_lkml_view(target_model, metrics, models):
     for dim in target_model['dimensions']:
         lkml_dim = dimension_to_lkml(dim)
 
-        if lkml_dim['type'] == 'time':
+        if lkml_dim.get('type') == 'time':
             lkml_view['dimension_groups'].append(lkml_dim)
         else:
             lkml_view['dimensions'].append(lkml_dim)

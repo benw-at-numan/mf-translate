@@ -38,7 +38,7 @@ def test_category_dimension():
     assert lkml_delivery_rating["name"] == "delivery_rating"
     assert lkml_delivery_rating["description"] == "The rating the customer gave the delivery person."
     assert lkml_delivery_rating["label"] == "Delivery Rating"
-    assert lkml_delivery_rating["type"] == "string"
+    assert "type" not in lkml_delivery_rating
 
 
 def test_category_dim_with_expr():
@@ -52,7 +52,7 @@ def test_category_dim_with_expr():
     lkml_is_bulk_transaction = to_lkml.dimension_to_lkml(mf_is_bulk_transaction)
 
     assert lkml_is_bulk_transaction["name"] == "is_bulk_transaction"
-    assert lkml_is_bulk_transaction["type"] == "string"
+    assert "type" not in lkml_is_bulk_transaction
     assert lkml_is_bulk_transaction["sql"] == "case when quantity > 10 then true else false end"
 
 

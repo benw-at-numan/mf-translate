@@ -92,7 +92,7 @@ def test_simple_metric():
             {
                 "name": "delivery_count",
                 "agg": "count",
-                "create_metric": False,
+                "create_metric": True,
                 "expr": "delivery_id"
             }
         ]
@@ -106,7 +106,7 @@ def test_simple_metric():
 
     assert lkml_measure["name"] == "delivery_count"
     assert lkml_measure["type"] == "count"
-    assert lkml_measure["description"] == "Metric created from measure delivery_count"
+    assert "description" not in lkml_measure
     assert lkml_measure["label"] == "delivery_count"
     assert "sql" not in lkml_measure
     assert lkml_measure["parent_view"] == "deliveries"
@@ -141,7 +141,7 @@ def test_another_simple_metric():
                 "name": "order_total",
                 "agg": "sum",
                 "description": "The total amount for each order including taxes.",
-                "create_metric": False,
+                "create_metric": True,
                 "expr": None
             }
         ]
