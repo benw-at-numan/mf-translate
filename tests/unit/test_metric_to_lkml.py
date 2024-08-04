@@ -107,7 +107,7 @@ def test_simple_metric():
     assert lkml_measure["name"] == "delivery_count"
     assert lkml_measure["type"] == "count"
     assert "description" not in lkml_measure
-    assert lkml_measure["label"] == "delivery_count"
+    assert "label" not in lkml_measure
     assert "sql" not in lkml_measure
     assert lkml_measure["parent_view"] == "deliveries"
 

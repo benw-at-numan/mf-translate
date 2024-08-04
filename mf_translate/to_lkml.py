@@ -158,13 +158,13 @@ def metric_to_lkml_measures(target_metric, models, metrics=[]):
 
         lkml_measure = simple_metric_to_lkml_measure(target_metric, models)
 
-        if target_metric.get("label"):
+        if target_metric.get("label") != target_metric['name']:
             lkml_measure["label"] = target_metric["label"]
 
         if target_metric.get("description") != f"Metric created from measure {target_metric['name']}":
             lkml_measure["description"] = target_metric["description"]
 
-        logging.info(f"Translated simple metric {lkml_measure['name']}.") 
+        logging.info(f"Translated simple metric {lkml_measure['name']}.")
         return [lkml_measure]
 
     elif target_metric["type"] == "ratio":
@@ -182,7 +182,7 @@ def metric_to_lkml_measures(target_metric, models, metrics=[]):
 
         lkml_numerator = simple_metric_to_lkml_measure(metric=numerator_metric,
                                                        models=models,
-                                                       additional_where_filters=numerator_where_filters + metric_where_filters)       
+                                                       additional_where_filters=numerator_where_filters + metric_where_filters)
         lkml_numerator["name"] = f"{target_metric['name']}_numerator"
         lkml_numerator["hidden"] = 'yes'
 
