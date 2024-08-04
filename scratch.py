@@ -18,11 +18,15 @@ orders_lkml_view = to_lkml.model_to_lkml_view(target_model=model_dict['orders'],
                            metrics=semantic_manifest['metrics'],
                            models=semantic_manifest['semantic_models'])
 
-logging.info(lkml.dump({'views': [orders_lkml_view]}))
+with open('looker/orders.view.lkml', 'w') as file:
+    file.write(lkml.dump({'views': [orders_lkml_view]}))
+
+
 # %%
 deliveries_lkml_view = to_lkml.model_to_lkml_view(target_model=model_dict['deliveries'], 
                            metrics=semantic_manifest['metrics'],
                            models=semantic_manifest['semantic_models'])
 
-logging.info(lkml.dump({'views': [deliveries_lkml_view]}))
+with open('looker/deliveries.view.lkml', 'w') as file:
+    file.write(lkml.dump({'views': [orders_lkml_view]}))
 # %%

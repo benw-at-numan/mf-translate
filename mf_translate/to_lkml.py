@@ -83,7 +83,7 @@ def sql_expression_to_lkml(expression, models):
         model_for_entity = None
         for model in models:
             for entity in model["entities"]:
-                if entity["name"] == entity_name:
+                if entity["name"] == entity_name and entity["type"] == 'primary':
                     model_for_entity = model
                     break
 

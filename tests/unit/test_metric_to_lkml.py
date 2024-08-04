@@ -169,9 +169,9 @@ def normalised_strings_equal(string1, string2):
 
 def test_metric_with_category_filter():
 
-    large_order_count = {
-        "name": "large_orders",
-        "description": "Count of orders with order total over 20.",
+    orders_for_returning_customers = {
+        "name": "orders_for_returning_customers",
+        "description": "Count of orders from returning customers.",
         "type": "simple",
         "type_params": {
             "measure": {
@@ -182,11 +182,11 @@ def test_metric_with_category_filter():
         "filter": {
             "where_filters": [
                 {
-                    "where_sql_template": "{{ Dimension('order_id__is_large_order') }} = true\n"
+                    "where_sql_template": "{{ Dimension('customer_id__customer_type') }} = 'returning'"
                 }
             ]
         },
-        "label": "Large Orders"
+        "label": "Returning customer orders"
     }
 
     orders_model = {
@@ -196,6 +196,10 @@ def test_metric_with_category_filter():
                 "name": "order_id",
                 "type": "primary",
                 "expr": "order_id"
+            },
+            {
+                "name": "customer_id",
+                "type": "foreign"
             }
         ],
         "measures": [
@@ -208,18 +212,29 @@ def test_metric_with_category_filter():
         ]
     }
 
-    lkml_large_order_count = to_lkml.metric_to_lkml_measures(target_metric=large_order_count,
-                                                             models=[orders_model])
+    customers_model = {
+        "name": "customers",
+        "entities": [
+            {
+                "name": "customer_id",
+                "type": "primary",
+            }
+        ],
+        "measures": []
+    }
+
+    lkml_large_order_count = to_lkml.metric_to_lkml_measures(target_metric=orders_for_returning_customers,
+                                                             models=[customers_model, orders_model])
 
     lkml_measure = lkml_large_order_count[0]
 
-    assert lkml_measure["name"] == "large_orders"
+    assert lkml_measure["name"] == "orders_for_returning_customers"
     assert lkml_measure["type"] == "sum"
-    assert lkml_measure["description"] == "Count of orders with order total over 20."
-    assert lkml_measure["label"] == "Large Orders"
+    assert lkml_measure["description"] == "Count of orders from returning customers."
+    assert lkml_measure["label"] == "Returning customer orders"
     assert normalised_strings_equal(lkml_measure["sql"],
                                     """
-                                    case when (${orders.is_large_order} = true)
+                                    case when (${customers.customer_type} = 'returning')
                                         then (1)
                                     end
                                     """)
