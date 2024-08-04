@@ -14,10 +14,10 @@ def entity_to_lkml(entity):
 
     # PRIMARY KEY
     if entity.get("type") == 'primary':
-        lkml_dim["primary_key"] = 'Yes'
+        lkml_dim["primary_key"] = 'yes'
 
     # HIDDEN
-    lkml_dim["hidden"] = 'Yes'
+    lkml_dim["hidden"] = 'yes'
 
     # SQL
     if entity.get("expr"):
@@ -184,7 +184,7 @@ def metric_to_lkml_measures(target_metric, models, metrics=[]):
                                                        models=models,
                                                        additional_where_filters=numerator_where_filters + metric_where_filters)       
         lkml_numerator["name"] = f"{target_metric['name']}_numerator"
-        lkml_numerator["hidden"] = 'Yes'
+        lkml_numerator["hidden"] = 'yes'
 
         # DENOMINATOR
         denominator_params = target_metric["type_params"]["denominator"]
@@ -199,7 +199,7 @@ def metric_to_lkml_measures(target_metric, models, metrics=[]):
                                                          models=models,
                                                          additional_where_filters=denominator_where_filters + metric_where_filters)
         lkml_denominator["name"] = f"{target_metric['name']}_denominator"
-        lkml_denominator["hidden"] = 'Yes'
+        lkml_denominator["hidden"] = 'yes'
 
         # RATIO
         lkml_ratio = {}

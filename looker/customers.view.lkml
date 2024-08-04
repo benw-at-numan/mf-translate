@@ -24,8 +24,8 @@ view: customers {
   }
 
   dimension: customer_id {
-    primary_key: Yes
-    hidden: Yes
+    primary_key: yes
+    hidden: yes
   }
 
   dimension: customer_name {}

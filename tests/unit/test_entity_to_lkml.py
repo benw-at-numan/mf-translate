@@ -14,9 +14,9 @@ def test_primary_key_entity():
     assert lkml_customer_dim["name"] == "customer"
     assert lkml_customer_dim["description"] == "Customer identifier. Primary key."
     assert "type" not in lkml_customer_dim
-    assert lkml_customer_dim["hidden"] == 'Yes'
+    assert lkml_customer_dim["hidden"] == 'yes'
     assert lkml_customer_dim["sql"] == "customer_id"
-    assert lkml_customer_dim["primary_key"] == 'Yes'
+    assert lkml_customer_dim["primary_key"] == 'yes'
 
 
 def test_foreign_key_entity():
@@ -30,7 +30,7 @@ def test_foreign_key_entity():
 
     assert lkml_order_dim["name"] == "order_id"
     assert "primary_key" not in lkml_order_dim
-    assert lkml_order_dim["hidden"] == 'Yes'
+    assert lkml_order_dim["hidden"] == 'yes'
     assert "sql" not in lkml_order_dim
 
 def test_foreign_key_entity_with_custom_sql():
@@ -45,5 +45,5 @@ def test_foreign_key_entity_with_custom_sql():
 
     assert lkml_order_dim["name"] == "delivery_person_id"
     assert "primary_key" not in lkml_order_dim
-    assert lkml_order_dim["hidden"] == 'Yes'
+    assert lkml_order_dim["hidden"] == 'yes'
     assert lkml_order_dim["sql"] == "delivery_man_id"

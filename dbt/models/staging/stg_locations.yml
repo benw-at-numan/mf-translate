@@ -16,7 +16,7 @@ semantic_models:
     defaults:
       agg_time_dimension: opened_at
     entities:
-      - name: location
+      - name: location_id
         type: primary
         expr: location_id
     dimensions:

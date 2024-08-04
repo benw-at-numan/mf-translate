@@ -13,9 +13,9 @@ view: locations {
     ]
   }
 
-  dimension: location {
-    primary_key: Yes
-    hidden: Yes
+  dimension: location_id {
+    primary_key: yes
+    hidden: yes
     sql: location_id ;;
   }
 

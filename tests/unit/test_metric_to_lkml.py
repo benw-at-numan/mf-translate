@@ -380,7 +380,7 @@ def test_ratio_metric():
 
     lkml_numerator = lkml_food_revenue_pct[0]
     assert lkml_numerator["name"] == "food_revenue_pct_numerator"
-    assert lkml_numerator["hidden"] == 'Yes'
+    assert lkml_numerator["hidden"] == 'yes'
     assert lkml_numerator["type"] == "sum"
     assert 'description' not in lkml_numerator
     assert 'label' not in lkml_numerator
@@ -389,7 +389,7 @@ def test_ratio_metric():
 
     lkml_denominator = lkml_food_revenue_pct[1]
     assert lkml_denominator["name"] == "food_revenue_pct_denominator"
-    assert lkml_denominator["hidden"] == 'Yes'
+    assert lkml_denominator["hidden"] == 'yes'
     assert lkml_denominator["type"] == "sum"
     assert 'description' not in lkml_denominator
     assert 'label' not in lkml_denominator
@@ -487,7 +487,7 @@ def test_filtered_ratio_metric():
 
     lkml_numerator = lkml_pc_deliveries_with_5_stars[0]
     assert lkml_numerator["name"] == "pc_deliveries_with_5_stars_numerator"
-    assert lkml_numerator["hidden"] == 'Yes'
+    assert lkml_numerator["hidden"] == 'yes'
     assert lkml_numerator["type"] == "count_distinct"
     assert 'description' not in lkml_numerator
     assert 'label' not in lkml_numerator
@@ -502,7 +502,7 @@ def test_filtered_ratio_metric():
 
     lkml_denominator = lkml_pc_deliveries_with_5_stars[1]
     assert lkml_denominator["name"] == "pc_deliveries_with_5_stars_denominator"
-    assert lkml_denominator["hidden"] == 'Yes'
+    assert lkml_denominator["hidden"] == 'yes'
     assert lkml_denominator["type"] == "count_distinct"
     assert 'description' not in lkml_denominator
     assert 'label' not in lkml_denominator

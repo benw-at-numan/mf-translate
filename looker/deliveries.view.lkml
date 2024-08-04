@@ -13,16 +13,16 @@ view: deliveries {
   }
 
   dimension: delivery_id {
-    primary_key: Yes
-    hidden: Yes
+    primary_key: yes
+    hidden: yes
   }
 
   dimension: order_id {
-    hidden: Yes
+    hidden: yes
   }
 
   dimension: delivery_person_id {
-    hidden: Yes
+    hidden: yes
   }
 
   dimension: delivery_rating {}
@@ -33,7 +33,7 @@ view: deliveries {
                and (coalesce(${orders.discount_code}, 'NO_DISCOUNT') != 'STAFF_ORDER')
             then (delivery_id)
          end ;;
-    hidden: Yes
+    hidden: yes
   }
 
   measure: pc_deliveries_with_5_stars_denominator {
@@ -41,7 +41,7 @@ view: deliveries {
     sql: case when (coalesce(${orders.discount_code}, 'NO_DISCOUNT') != 'STAFF_ORDER')
             then (delivery_id)
          end ;;
-    hidden: Yes
+    hidden: yes
   }
 
   measure: pc_deliveries_with_5_stars {

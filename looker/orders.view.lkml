@@ -13,17 +13,17 @@ view: orders {
   }
 
   dimension: order_id {
-    primary_key: Yes
-    hidden: Yes
+    primary_key: yes
+    hidden: yes
   }
 
   dimension: location_id {
-    hidden: Yes
+    hidden: yes
     sql: location_id ;;
   }
 
   dimension: customer_id {
-    hidden: Yes
+    hidden: yes
     sql: customer_id ;;
   }
 
@@ -93,7 +93,7 @@ view: orders {
                and (${customers.customer_type} = 'returning')
             then (1)
          end ;;
-    hidden: Yes
+    hidden: yes
   }
 
   measure: pc_drink_orders_for_returning_customers_denominator {
@@ -101,7 +101,7 @@ view: orders {
     sql: case when (${customers.customer_type} = 'returning')
             then (1)
          end ;;
-    hidden: Yes
+    hidden: yes
   }
 
   measure: pc_drink_orders_for_returning_customers {
