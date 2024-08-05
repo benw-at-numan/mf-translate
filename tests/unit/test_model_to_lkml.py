@@ -19,7 +19,7 @@ def test_model_to_sql_table_name():
     assert to_lkml.model_to_sql_table_name(model) == "`fresh-iridium-428713-j5`.`jaffle_shop`.`deliveries`"
 
 
-def test_basic_model_to_lkml_view():
+def test_basic_model_to_lkml_view(monkeypatch):
 
     deliveries_model = {
         "name": "deliveries",
@@ -72,25 +72,24 @@ def test_basic_model_to_lkml_view():
         ]
     }
 
-    metrics = [
-        {
-            "name": "delivery_count",
-            "description": "Metric created from measure delivery_count",
-            "type": "simple",
-            "type_params": {
-                "measure": {
-                    "name": "delivery_count",
-                    "join_to_timespine": False
-                },
-                "expr": "delivery_count"
+    delivery_count = {
+        "name": "delivery_count",
+        "description": "Metric created from measure delivery_count",
+        "type": "simple",
+        "type_params": {
+            "measure": {
+                "name": "delivery_count",
+                "join_to_timespine": False
             },
-            "label": "delivery_count"
-        }
-    ]
+            "expr": "delivery_count"
+        },
+        "label": "delivery_count"
+    }
 
-    lkml_view = to_lkml.model_to_lkml_view(target_model=deliveries_model,
-                                           metrics=metrics,
-                                           models=[deliveries_model])
+    monkeypatch.setattr(to_lkml, "SEMANTIC_MODELS", [deliveries_model])
+    monkeypatch.setattr(to_lkml, "METRICS", [delivery_count])
+
+    lkml_view = to_lkml.model_to_lkml_view(deliveries_model)
 
     assert lkml_view["name"] == "deliveries"
     assert lkml_view['sql_table_name'] == "`fresh-iridium-428713-j5`.`jaffle_shop`.`deliveries`"

@@ -2,22 +2,37 @@
 import json
 import lkml
 import mf_translate.to_lkml as to_lkml
-
+import os
 import logging
 logging.basicConfig(level=logging.DEBUG, format='%(levelname)s: %(message)s')
 
+from dotenv import load_dotenv
+load_dotenv()
 
 # %%
-with open('dbt/target/semantic_manifest.json') as f:
-    semantic_manifest = json.load(f)
+manifest_dir = os.getenv('MF_TRANSLATE__DBT_MANIFIEST_DIR')
+if not manifest_dir:
+    raise ValueError("Manifest directory must be provided.")
+    
+manifest_dir = manifest_dir.rstrip('/')
+manifest_path = f'{manifest_dir}/semantic_manifest.json'
+
+semantic_manifest = {}
+try:
+    with open(manifest_path) as f:
+        semantic_manifest = json.load(f)
+except FileNotFoundError:
+    raise FileNotFoundError(f"The file {manifest_path} does not exist.")
+except json.JSONDecodeError:
+    raise ValueError(f"The file {manifest_path} is not a valid JSON file.")
 
 model_dict = {model['name']: model for model in semantic_manifest['semantic_models']}
 
+to_lkml.set_semantic_manifest(semantic_manifest)
+
 # %%
 # TRANSLATE ORDERS
-orders_lkml_view = to_lkml.model_to_lkml_view(target_model=model_dict['orders'], 
-                           metrics=semantic_manifest['metrics'],
-                           models=semantic_manifest['semantic_models'])
+orders_lkml_view = to_lkml.model_to_lkml_view(model=model_dict['orders'])
 
 with open('looker/orders.view.lkml', 'w') as file:
     file.write(lkml.dump({'views': [orders_lkml_view]}))
@@ -25,18 +40,14 @@ with open('looker/orders.view.lkml', 'w') as file:
 
 # %%
 # TRANSLATE DELIVERIES
-deliveries_lkml_view = to_lkml.model_to_lkml_view(target_model=model_dict['deliveries'], 
-                           metrics=semantic_manifest['metrics'],
-                           models=semantic_manifest['semantic_models'])
+deliveries_lkml_view = to_lkml.model_to_lkml_view(model=model_dict['deliveries'])
 
 with open('looker/deliveries.view.lkml', 'w') as file:
     file.write(lkml.dump({'views': [deliveries_lkml_view]}))
 
 # %%
 # TRANSLATE DELIVERY_PEOPLE
-delivery_people_lkml_view = to_lkml.model_to_lkml_view(target_model=model_dict['delivery_people'], 
-                           metrics=semantic_manifest['metrics'],
-                           models=semantic_manifest['semantic_models'])
+delivery_people_lkml_view = to_lkml.model_to_lkml_view(model=model_dict['delivery_people'])
 
 with open('looker/delivery_people.view.lkml', 'w') as file:
     file.write(lkml.dump({'views': [delivery_people_lkml_view]}))
@@ -44,18 +55,14 @@ with open('looker/delivery_people.view.lkml', 'w') as file:
 
 # %%
 # TRANSLATE CUSTOMERS
-customers_lkml_view = to_lkml.model_to_lkml_view(target_model=model_dict['customers'], 
-                           metrics=semantic_manifest['metrics'],
-                           models=semantic_manifest['semantic_models'])
+customers_lkml_view = to_lkml.model_to_lkml_view(model=model_dict['customers'])
 
 with open('looker/customers.view.lkml', 'w') as file:
     file.write(lkml.dump({'views': [customers_lkml_view]}))
 
 # %%
 # TRANSLATE LOCATIONS
-locations_lkml_view = to_lkml.model_to_lkml_view(target_model=model_dict['locations'], 
-                           metrics=semantic_manifest['metrics'],
-                           models=semantic_manifest['semantic_models'])
+locations_lkml_view = to_lkml.model_to_lkml_view(model=model_dict['locations'])
 
 with open('looker/locations.view.lkml', 'w') as file:
     file.write(lkml.dump({'views': [locations_lkml_view]}))

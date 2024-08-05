@@ -91,8 +91,8 @@ def test_time_dimension_with_timezone(monkeypatch):
         }
     }
 
-    monkeypatch.setenv('TRANSLATE__TARGET_DATABASE', 'bigquery')
-    monkeypatch.setenv('TRANSLATE_TO_CUBE__TIMEZONE_FOR_TIME_DIMENSIONS', 'America/Los_Angeles')
+    monkeypatch.setenv('MF_TRANSLATE__TARGET_DATABASE', 'bigquery')
+    monkeypatch.setenv('MF_TRANSLATE__CUBE_TIMEZONE_FOR_TIME_DIMENSIONS', 'America/Los_Angeles')
 
     cube_created_at = to_cube.dimension_to_cube(created_at)
 
@@ -112,8 +112,8 @@ def test_time_dimension_with_timezone_2(monkeypatch):
         "expr": "ts_created",
     }
 
-    monkeypatch.setenv('TRANSLATE__TARGET_DATABASE', 'snowflake')
-    monkeypatch.setenv('TRANSLATE_TO_CUBE__TIMEZONE_FOR_TIME_DIMENSIONS', 'America/Los_Angeles')
+    monkeypatch.setenv('MF_TRANSLATE__TARGET_DATABASE', 'snowflake')
+    monkeypatch.setenv('MF_TRANSLATE__CUBE_TIMEZONE_FOR_TIME_DIMENSIONS', 'America/Los_Angeles')
 
     cube_created_at = to_cube.dimension_to_cube(created_at)
 

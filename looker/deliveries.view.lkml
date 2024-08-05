@@ -53,6 +53,5 @@ view: deliveries {
 
   measure: delivery_count {
     type: count
-    label: "delivery_count"
   }
 }

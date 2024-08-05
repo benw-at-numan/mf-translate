@@ -20,6 +20,23 @@ def test_only_non_null_keys_translated():
     assert 'sql' not in lkml_dimension
 
 
+# def test_unqualified_field_expressions():
+
+#     mf_expr = 'revenue - discount'
+#     lkml_sql = to_lkml.sql_expression_to_lkml(expression=mf_expr,
+#                                               from_model=orders,
+#                                               models=[orders],
+#                                               })
+#     assert lkml_sql == '${TABLE}.revenue - ${TABLE}.discount'
+
+#     mf_expr = 'floor(revenue)'
+#     lkml_sql = to_lkml.sql_expression_to_lkml(mf_expr)
+#     assert lkml_sql == 'floor(${TABLE}.revenue)'
+
+#     mf_expr = 'CAST(datediff(second, ordered_at, delivered_at) as FLOAT) / 60*60'
+#     lkml_sql = to_lkml.sql_expression_to_lkml(mf_expr)
+#     assert lkml_sql == 'CAST(datediff(second, ${TABLE}.ordered_at, ${TABLE}.delivered_at) as FLOAT) / 60*60'
+
 
 def test_category_dimension():
 
@@ -53,7 +70,7 @@ def test_category_dim_with_expr():
 
     assert lkml_is_bulk_transaction["name"] == "is_bulk_transaction"
     assert "type" not in lkml_is_bulk_transaction
-    assert lkml_is_bulk_transaction["sql"] == "case when quantity > 10 then true else false end"
+    assert lkml_is_bulk_transaction["sql"] == "case when ${TABLE}.quantity > 10 then true else false end"
 
 
 def test_time_dimension():
@@ -74,7 +91,7 @@ def test_time_dimension():
     assert lkml_create_date["type"] == "time"
     assert lkml_create_date["timeframes"] == ['date', 'week', 'month', 'quarter', 'year']
     assert lkml_create_date["label"] == "Date of creation"
-    assert lkml_create_date["sql"] == "date_trunc('day', ts_created)"
+    assert lkml_create_date["sql"] == "date_trunc('day', ${TABLE}.ts_created)"
 
 
 def test_monthly_time_dimension():
@@ -95,7 +112,7 @@ def test_monthly_time_dimension():
     assert lkml_invoice_month["type"] == "time"
     assert lkml_invoice_month["timeframes"] == ['month', 'quarter', 'year']
     assert lkml_invoice_month["label"] == "Month of invoice"
-    assert lkml_invoice_month["sql"] == "date_trunc('month', ts_invoiced)"
+    assert lkml_invoice_month["sql"] == "date_trunc('month', ${TABLE}.ts_invoiced)"
 
 
 def test_time_dim_without_granularity():
@@ -113,4 +130,4 @@ def test_time_dim_without_granularity():
     assert lkml_order_date["type"] == "date_time"
     assert "timeframes" not in lkml_order_date
     assert lkml_order_date["label"] == "Time of order"
-    assert lkml_order_date["sql"] == "ts_ordered"
+    assert lkml_order_date["sql"] == "${TABLE}.ts_ordered"

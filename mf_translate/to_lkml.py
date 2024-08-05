@@ -1,25 +1,47 @@
 import re
 import logging
+import json
+
+SEMANTIC_MODELS = []
+METRICS = []
+
+def set_semantic_manifest(semantic_manifest):
+    """
+    Sets the SEMANTIC_MODELS and METRICS globals from a semantic manifest.
+    
+    Parameters:
+    semantic_manifest (dict): The semantic manifest loaded from semantic_manifest.json.
+    """
+    global SEMANTIC_MODELS
+    global METRICS
+
+    SEMANTIC_MODELS = semantic_manifest.get('semantic_models', [])
+    METRICS = semantic_manifest.get('metrics', [])
+
 
 def entity_to_lkml(entity):
+    """
+    Translates metricflow entity to LookML dimension.
+
+    Parameters:
+    entity (dict): The entity to be translated.
+
+    Returns:
+    dict: The LookML dimension.
+    """
 
     lkml_dim = {}
 
-    # NAME
     lkml_dim["name"] = entity["name"]
 
-    # DESCRIPTION
     if entity.get("description"):
         lkml_dim["description"] = entity["description"]
 
-    # PRIMARY KEY
     if entity.get("type") == 'primary':
         lkml_dim["primary_key"] = 'yes'
 
-    # HIDDEN
     lkml_dim["hidden"] = 'yes'
 
-    # SQL
     if entity.get("expr"):
         lkml_dim["sql"] = entity["expr"]
 
@@ -27,6 +49,15 @@ def entity_to_lkml(entity):
 
 
 def time_granularity_to_timeframes(time_granularity):
+    """
+    Helper converting metricflow time granularity to list of Looker timeframes.
+
+    Parameters:
+    time_granularity (str): E.g. 'day', 'week', 'month', 'quarter', 'year'.
+
+    Returns:
+    list: The Looker timeframes.
+    """
 
     time_granularities = ["day", "week", "month", "quarter", "year"]
     start_index = time_granularities.index(time_granularity)
@@ -36,26 +67,30 @@ def time_granularity_to_timeframes(time_granularity):
 
 
 def dimension_to_lkml(dim):
+    """
+    Translates metricflow dimension to LookML dimension.
+
+    Parameters:
+    dim (dict): The metricflow dimension to be translated.
+
+    Returns:
+    dict: The LookML dimension.
+    """
 
     lkml_dim = {}
 
-    # NAME
     if dim.get("name"):
         lkml_dim["name"] = dim["name"]
 
-    # DESCRIPTION
     if dim.get("description"):
         lkml_dim["description"] = dim["description"]
 
-    # LABEL
     if dim.get("label"):
         lkml_dim["label"] = dim["label"]
 
-    # SQL
     if dim.get("expr"):
         lkml_dim["sql"] = dim["expr"]
 
-    # TYPE AND TIMEFRAMES
     if dim.get("type") == "time" and dim.get("type_params") and dim["type_params"].get("time_granularity"):
         lkml_dim["type"] = "time"
         lkml_dim["timeframes"] = time_granularity_to_timeframes(dim["type_params"]["time_granularity"])
@@ -66,7 +101,16 @@ def dimension_to_lkml(dim):
     return lkml_dim
 
 
-def sql_expression_to_lkml(expression, models):
+def sql_expression_to_lkml(expression):
+    """
+    Translates metricflow SQL expression to LookML SQL expression. E.g. '{{ Dimension('delivery__delivery_rating') }}' becomes '${deliveries.delivery_rating}'; revenue * 0.1 becomes ${TABLE}.revenue * 0.1.
+
+    Parameters:
+    expression (str): The metricflow SQL expression to be translated.
+
+    Returns:
+    str: The LookML SQL expression.
+    """
 
     dim_ref_pattern = r"\{\{\s*Dimension\s*\(\s*'([^']+?)'\s*\)\s*\}\}"
 
@@ -78,7 +122,7 @@ def sql_expression_to_lkml(expression, models):
 
          # Get model for entity
         model_for_entity = None
-        for model in models:
+        for model in SEMANTIC_MODELS:
             for entity in model["entities"]:
                 if entity["name"] == entity_name and entity["type"] == 'primary':
                     model_for_entity = model
@@ -91,6 +135,16 @@ def sql_expression_to_lkml(expression, models):
 
 
 def measure_to_lkml_type(measure, where_filters):
+    """
+    Translates metricflow measure to LookML measure type, count, count_distinct, sum, average, min, max.
+
+    Parameters:
+    measure (dict): The metricflow measure to be translated.
+    where_filters (list): The metricflow where filters applied to the measure.
+
+    Returns:
+    str: The LookML measure type.
+    """
 
     if measure["agg"] == "count" and len(where_filters) > 0:
         return "count_distinct"
@@ -98,7 +152,17 @@ def measure_to_lkml_type(measure, where_filters):
         return measure["agg"]
 
 
-def measure_to_lkml_sql(measure, where_filters, models):
+def measure_to_lkml_sql(measure, where_filters):
+    """
+    Combines a metricflow measure with a set of where filters to create a single LookML SQL case when expression.
+
+    Parameters:
+    measure (dict): The metricflow measure to be translated.
+    where_filters (list): The metricflow where filters applied to the measure.
+
+    Returns:
+    str: The LookML SQL expression.
+    """
 
     if measure["agg"] == "count" and len(where_filters) == 0:
         return None
@@ -106,25 +170,35 @@ def measure_to_lkml_sql(measure, where_filters, models):
     measure_expression = measure["expr"] if measure.get("expr") else measure["name"]
 
     if len(where_filters) == 0:
-        sql = sql_expression_to_lkml(measure_expression, models)
+        sql = sql_expression_to_lkml(measure_expression)
     else:
         # Incorporate metric's where filters into a SQL `case when` expression. So a filter `{{ Dimension('delivery_id__delivery_rating') }} = 5` becomes `case when (${deliveries.delivery_rating} = 5) then ... end`. An alternative would be to convert where filters to a lkml `filter: [..]`` statement, but this is more trouble than it's worth.
         for index, where_filter in enumerate(where_filters):
             if index == 0:
-                sql =  f'case when ({sql_expression_to_lkml(where_filter["where_sql_template"], models)})'
+                sql =  f'case when ({sql_expression_to_lkml(where_filter["where_sql_template"])})'
             else:
-                sql += f'\n               and ({sql_expression_to_lkml(where_filter["where_sql_template"], models)})'
+                sql += f'\n               and ({sql_expression_to_lkml(where_filter["where_sql_template"])})'
 
-        sql +=         f'\n            then ({sql_expression_to_lkml(measure_expression, models)})'
+        sql +=         f'\n            then ({sql_expression_to_lkml(measure_expression)})'
         sql +=          '\n         end'
 
     return sql
 
 
-def simple_metric_to_lkml_measure(metric, models, additional_where_filters=[]):
+def simple_metric_to_lkml_measure(metric, additional_where_filters=[]):
+    """
+    Translates a metricflow simple metric to a LookML measure.
+
+    Parameters:
+    metric (dict): The metricflow metric to be translated.
+    additional_where_filters (list): Optional, any additional metricflow where filters to be applied to the metric.
+
+    Returns:
+    dict: The LookML measure.
+    """
 
     measures_dict = {}
-    for model in models:
+    for model in SEMANTIC_MODELS:
         for measure in model["measures"]:
             measures_dict[measure["name"]] = measure | {'parent_model': model['name']}
 
@@ -137,7 +211,7 @@ def simple_metric_to_lkml_measure(metric, models, additional_where_filters=[]):
 
     lkml_measure["type"] = measure_to_lkml_type(measure, metric_where_filters + additional_where_filters)
 
-    sql = measure_to_lkml_sql(measure, metric_where_filters + additional_where_filters, models)
+    sql = measure_to_lkml_sql(measure, metric_where_filters + additional_where_filters)
     if sql:
         lkml_measure["sql"] = sql
 
@@ -146,71 +220,77 @@ def simple_metric_to_lkml_measure(metric, models, additional_where_filters=[]):
     return lkml_measure
 
 
-def metric_to_lkml_measures(target_metric, models, metrics=[]):
+def metric_to_lkml_measures(metric):
+    """
+    Translates a metricflow metric to one or more LookML measures. Currently supports simple and ratio metrics.
 
-    metrics_dict = {m["name"]: m for m in metrics}
+    Parameters:
+    metric (dict): The metricflow metric to be translated.
 
-    if target_metric["type"] in ["conversion", "cumulative", "derived"]:
-        logging.warning(f"Skipped {target_metric['name']} - {target_metric['type']} metrics are not yet supported.")
+    Returns:
+    list: A list of LookML measures.
+    """
+
+    if metric["type"] in ["conversion", "cumulative", "derived"]:
+        logging.warning(f"Skipped {metric['name']} - {metric['type']} metrics are not yet supported.")
         return []
 
-    elif target_metric["type"] == "simple":
+    elif metric["type"] == "simple":
 
-        lkml_measure = simple_metric_to_lkml_measure(target_metric, models)
+        lkml_measure = simple_metric_to_lkml_measure(metric)
 
-        if target_metric.get("label") != target_metric['name']:
-            lkml_measure["label"] = target_metric["label"]
+        if metric.get("label") != metric['name']:
+            lkml_measure["label"] = metric["label"]
 
-        if target_metric.get("description") != f"Metric created from measure {target_metric['name']}":
-            lkml_measure["description"] = target_metric["description"]
+        if metric.get("description") != f"Metric created from measure {metric['name']}":
+            lkml_measure["description"] = metric["description"]
 
         logging.info(f"Translated simple metric {lkml_measure['name']}.")
         return [lkml_measure]
 
-    elif target_metric["type"] == "ratio":
+    elif metric["type"] == "ratio":
 
-        metric_where_filters = (target_metric.get("filter") or  {}).get("where_filters", [])
+        metric_where_filters = (metric.get("filter") or  {}).get("where_filters", [])
+        metrics_dict = {m["name"]: m for m in METRICS}
 
         # NUMERATOR
-        numerator_params = target_metric["type_params"]["numerator"]
+        numerator_params = metric["type_params"]["numerator"]
         numerator_where_filters = (numerator_params.get("filter") or  {}).get("where_filters", [])
         numerator_metric = metrics_dict[numerator_params["name"]]
 
         if numerator_metric.get("type") != "simple":
-            logging.warning(f"Ratio metric {target_metric['name']} has a non-simple numerator metric: {numerator_metric['name']}. This is not supported.")
+            logging.warning(f"Ratio metric {metric['name']} has a non-simple numerator metric: {numerator_metric['name']}. This is not supported.")
             return []
 
         lkml_numerator = simple_metric_to_lkml_measure(metric=numerator_metric,
-                                                       models=models,
                                                        additional_where_filters=numerator_where_filters + metric_where_filters)
-        lkml_numerator["name"] = f"{target_metric['name']}_numerator"
+        lkml_numerator["name"] = f"{metric['name']}_numerator"
         lkml_numerator["hidden"] = 'yes'
 
         # DENOMINATOR
-        denominator_params = target_metric["type_params"]["denominator"]
+        denominator_params = metric["type_params"]["denominator"]
         denominator_where_filters = (denominator_params.get("filter") or  {}).get("where_filters", [])
         denominator_metric = metrics_dict[denominator_params["name"]]
 
         if denominator_metric.get("type") != "simple":
-            logging.warning(f"Skipped ratio metric {target_metric['name']} - non-simple denominator metrics are not currently supported.")
+            logging.warning(f"Skipped ratio metric {metric['name']} - non-simple denominator metrics are not currently supported.")
             return []
 
         lkml_denominator = simple_metric_to_lkml_measure(metric=denominator_metric,
-                                                         models=models,
                                                          additional_where_filters=denominator_where_filters + metric_where_filters)
-        lkml_denominator["name"] = f"{target_metric['name']}_denominator"
+        lkml_denominator["name"] = f"{metric['name']}_denominator"
         lkml_denominator["hidden"] = 'yes'
 
         # RATIO
         lkml_ratio = {}
-        lkml_ratio["name"] = target_metric["name"]
+        lkml_ratio["name"] = metric["name"]
         lkml_ratio["type"] = "number"
 
-        if target_metric.get("label"):
-            lkml_ratio["label"] = target_metric["label"]
+        if metric.get("label"):
+            lkml_ratio["label"] = metric["label"]
 
-        if target_metric.get("description"):
-            lkml_ratio["description"] = target_metric["description"]
+        if metric.get("description"):
+            lkml_ratio["description"] = metric["description"]
 
         lkml_ratio["sql"] = f"${{{lkml_numerator['name']}}} / nullif(${{{lkml_denominator['name']}}}, 0)"
 
@@ -229,21 +309,21 @@ def model_to_sql_table_name(model):
     return model["node_relation"]["relation_name"]
 
 
-def model_to_lkml_view(target_model, metrics, models):
+def model_to_lkml_view(model):
 
     lkml_view = {
-        "name": target_model['name'],
-        "sql_table_name": model_to_sql_table_name(target_model),
+        "name": model['name'],
+        "sql_table_name": model_to_sql_table_name(model),
         "dimension_groups": [],
         "dimensions": [],
         "measures": []
     }
 
-    for entity in target_model['entities']:
+    for entity in model['entities']:
         lkml_dim = entity_to_lkml(entity)
         lkml_view['dimensions'].append(lkml_dim)
 
-    for dim in target_model['dimensions']:
+    for dim in model['dimensions']:
         lkml_dim = dimension_to_lkml(dim)
 
         if lkml_dim.get('type') == 'time':
@@ -251,9 +331,9 @@ def model_to_lkml_view(target_model, metrics, models):
         else:
             lkml_view['dimensions'].append(lkml_dim)
 
-    for target_metric in metrics:
+    for metric in METRICS:
 
-        lkml_measures = metric_to_lkml_measures(target_metric, models, metrics)
+        lkml_measures = metric_to_lkml_measures(metric)
 
         for lkml_measure in lkml_measures:
             if lkml_measure['parent_view'] == lkml_view['name']:

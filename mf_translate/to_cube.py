@@ -10,11 +10,11 @@ def add_parentheses_to_sql(sql):
 
 def set_timezone_for_time_dimension(time_dimension_sql):
 
-    timezone = os.getenv("TRANSLATE_TO_CUBE__TIMEZONE_FOR_TIME_DIMENSIONS")
+    timezone = os.getenv("MF_TRANSLATE__CUBE_TIMEZONE_FOR_TIME_DIMENSIONS")
 
     if timezone:
 
-        target_database = os.getenv("TRANSLATE__TARGET_DATABASE")
+        target_database = os.getenv("MF_TRANSLATE__TARGET_DATABASE")
 
         if target_database == "bigquery":
             return f"TIMESTAMP({time_dimension_sql}, '{timezone}')"
