@@ -4,19 +4,22 @@ import json
 
 SEMANTIC_MODELS = []
 METRICS = []
+DBT_NODES = []
 
-def set_semantic_manifest(semantic_manifest):
+def set_manifests(metricflow_semantic_manifest, dbt_manifest):
     """
-    Sets the SEMANTIC_MODELS and METRICS globals from a semantic manifest.
-    
+    Sets the SEMANTIC_MODELS, METRICS and DBT_NODES globals from the MetricFlow semantic manifest and the DBT manifest.
+
     Parameters:
     semantic_manifest (dict): The semantic manifest loaded from semantic_manifest.json.
     """
     global SEMANTIC_MODELS
     global METRICS
+    global DBT_NODES
 
-    SEMANTIC_MODELS = semantic_manifest.get('semantic_models', [])
-    METRICS = semantic_manifest.get('metrics', [])
+    SEMANTIC_MODELS = metricflow_semantic_manifest.get('semantic_models', [])
+    METRICS = metricflow_semantic_manifest.get('metrics', [])
+    DBT_NODES = dbt_manifest.get('nodes', [])
 
 
 def entity_to_lkml(entity):
@@ -66,7 +69,7 @@ def time_granularity_to_timeframes(time_granularity):
     return timeframes[start_index:]
 
 
-def dimension_to_lkml(dim):
+def dimension_to_lkml(dim, from_model=None):
     """
     Translates metricflow dimension to LookML dimension.
 
@@ -89,7 +92,7 @@ def dimension_to_lkml(dim):
         lkml_dim["label"] = dim["label"]
 
     if dim.get("expr"):
-        lkml_dim["sql"] = dim["expr"]
+        lkml_dim["sql"] = sql_expression_to_lkml(dim["expr"], from_model)
 
     if dim.get("type") == "time" and dim.get("type_params") and dim["type_params"].get("time_granularity"):
         lkml_dim["type"] = "time"
@@ -101,7 +104,7 @@ def dimension_to_lkml(dim):
     return lkml_dim
 
 
-def sql_expression_to_lkml(expression):
+def sql_expression_to_lkml(expression, from_model=None):
     """
     Translates metricflow SQL expression to LookML SQL expression. E.g. '{{ Dimension('delivery__delivery_rating') }}' becomes '${deliveries.delivery_rating}'; revenue * 0.1 becomes ${TABLE}.revenue * 0.1.
 
@@ -112,6 +115,27 @@ def sql_expression_to_lkml(expression):
     str: The LookML SQL expression.
     """
 
+    # Step 1: Replace unqualified table fields with ${TABLE}.field
+    if from_model:
+
+        node_dict = { node_data['relation_name']: node_data for node_name, node_data in DBT_NODES.items() }
+        node_for_model = node_dict[from_model['node_relation']['relation_name']]
+        node_columns  = node_for_model['columns'].keys()
+
+        # Pattern to match unqualified fields (words) not in {{ Dimension('...') }}
+        # unqualified_field_pattern = r"(?<![\w\{])\b(?!\{\{ Dimension\(')\w+\b"
+        unqualified_field_pattern = r"\b(?!\{\{ Dimension\(')\w+\b"
+
+        def translate_unqualified_field(match):
+            if match.group(0) in node_columns:
+                return f"${{TABLE}}.{match.group(0)}"
+            else:
+                return match.group(0)
+
+        expression = re.sub(unqualified_field_pattern, translate_unqualified_field, expression)
+
+
+    # Step 2: Replace {{ Dimension('entity__dimension') }} with ${entity.dimension}
     dim_ref_pattern = r"\{\{\s*Dimension\s*\(\s*'([^']+?)'\s*\)\s*\}\}"
 
     def translate_dim_ref(match):

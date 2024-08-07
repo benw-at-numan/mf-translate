@@ -1,1 +1,1 @@
-- How can I link semantic models to DBT models (get a list of columns so that unqualified SQL expressions can be prefixed with ${TABLE}).
+- Apply new sql_expression_to_lkml(dim,from_model) to metric and measures

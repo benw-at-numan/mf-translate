@@ -20,22 +20,47 @@ def test_only_non_null_keys_translated():
     assert 'sql' not in lkml_dimension
 
 
-# def test_unqualified_field_expressions():
+def test_unqualified_field_expressions(monkeypatch):
 
-#     mf_expr = 'revenue - discount'
-#     lkml_sql = to_lkml.sql_expression_to_lkml(expression=mf_expr,
-#                                               from_model=orders,
-#                                               models=[orders],
-#                                               })
-#     assert lkml_sql == '${TABLE}.revenue - ${TABLE}.discount'
+    nodes = {
+        "model.jaffle_shop.orders": {
+            "columns": {
+                "order_id": {},
+                "ordered_at": {},
+                "delivered_at": {},
+                "revenue": {},
+                "discount": {}
+            },
+            "relation_name": "`mf_translate_db`.`jaffle_shop`.`orders`"
+        },
+        "model.jaffle_shop.customers": {
+            "columns": {
+                "customer_id": {}
+            },
+            "relation_name": "`mf_translate_db`.`jaffle_shop`.`customers`"
+        }
+    }
 
-#     mf_expr = 'floor(revenue)'
-#     lkml_sql = to_lkml.sql_expression_to_lkml(mf_expr)
-#     assert lkml_sql == 'floor(${TABLE}.revenue)'
+    orders_model = {
+        "name": "orders",
+        "node_relation": {
+            "relation_name": "`mf_translate_db`.`jaffle_shop`.`orders`"
+        }
+    }
 
-#     mf_expr = 'CAST(datediff(second, ordered_at, delivered_at) as FLOAT) / 60*60'
-#     lkml_sql = to_lkml.sql_expression_to_lkml(mf_expr)
-#     assert lkml_sql == 'CAST(datediff(second, ${TABLE}.ordered_at, ${TABLE}.delivered_at) as FLOAT) / 60*60'
+    monkeypatch.setattr(to_lkml, 'DBT_NODES', nodes)
+
+    mf_expr = 'revenue -discount'
+    lkml_sql = to_lkml.sql_expression_to_lkml(expression=mf_expr, from_model=orders_model)
+    assert lkml_sql == '${TABLE}.revenue -${TABLE}.discount'
+
+    mf_expr = 'floor(revenue)'
+    lkml_sql = to_lkml.sql_expression_to_lkml(mf_expr, from_model=orders_model)
+    assert lkml_sql == 'floor(${TABLE}.revenue)'
+
+    mf_expr = 'CAST(datediff(second, ordered_at, delivered_at) as FLOAT) / 60*60'
+    lkml_sql = to_lkml.sql_expression_to_lkml(mf_expr, from_model=orders_model)
+    assert lkml_sql == 'CAST(datediff(second, ${TABLE}.ordered_at, ${TABLE}.delivered_at) as FLOAT) / 60*60'
 
 
 def test_category_dimension():
@@ -58,7 +83,24 @@ def test_category_dimension():
     assert "type" not in lkml_delivery_rating
 
 
-def test_category_dim_with_expr():
+def test_category_dim_with_expr(monkeypatch):
+
+    nodes = {
+        "model.jaffle_shop.deliveries": {
+            "columns": {
+                "order_id": {},
+                "quantity": {}
+            },
+            "relation_name": "`mf_translate_db`.`jaffle_shop`.`orders`"
+        }
+    }
+
+    orders_model = {
+        "name": "orders",
+        "node_relation": {
+            "relation_name": "`mf_translate_db`.`jaffle_shop`.`orders`"
+        }
+    }
 
     mf_is_bulk_transaction = {
         "name": "is_bulk_transaction",
@@ -66,14 +108,34 @@ def test_category_dim_with_expr():
         "expr": "case when quantity > 10 then true else false end",
     }
 
-    lkml_is_bulk_transaction = to_lkml.dimension_to_lkml(mf_is_bulk_transaction)
+    monkeypatch.setattr(to_lkml, 'DBT_NODES', nodes)
+
+    lkml_is_bulk_transaction = to_lkml.dimension_to_lkml(dim=mf_is_bulk_transaction,
+                                                         from_model=orders_model)
 
     assert lkml_is_bulk_transaction["name"] == "is_bulk_transaction"
     assert "type" not in lkml_is_bulk_transaction
     assert lkml_is_bulk_transaction["sql"] == "case when ${TABLE}.quantity > 10 then true else false end"
 
 
-def test_time_dimension():
+def test_time_dimension(monkeypatch):
+
+    nodes = {
+        "model.jaffle_shop.deliveries": {
+            "columns": {
+                "order_id": {},
+                "ts_created": {}
+            },
+            "relation_name": "`mf_translate_db`.`jaffle_shop`.`orders`"
+        }
+    }
+
+    orders_model = {
+        "name": "orders",
+        "node_relation": {
+            "relation_name": "`mf_translate_db`.`jaffle_shop`.`orders`"
+        }
+    }
 
     mf_create_date = {
         "name": "created_at",
@@ -85,7 +147,10 @@ def test_time_dimension():
         }
     }
 
-    lkml_create_date = to_lkml.dimension_to_lkml(mf_create_date)
+    monkeypatch.setattr(to_lkml, 'DBT_NODES', nodes)
+
+    lkml_create_date = to_lkml.dimension_to_lkml(dim=mf_create_date,
+                                                 from_model=orders_model)
 
     assert lkml_create_date["name"] == "created_at"
     assert lkml_create_date["type"] == "time"
@@ -94,7 +159,24 @@ def test_time_dimension():
     assert lkml_create_date["sql"] == "date_trunc('day', ${TABLE}.ts_created)"
 
 
-def test_monthly_time_dimension():
+def test_monthly_time_dimension(monkeypatch):
+
+    nodes = {
+        "model.jaffle_shop.invoices": {
+            "columns": {
+                "invoice_id": {},
+                "ts_invoiced": {}
+            },
+            "relation_name": "`mf_translate_db`.`jaffle_shop`.`invoices`"
+        }
+    }
+
+    invoices_model = {
+        "name": "invoices",
+        "node_relation": {
+            "relation_name": "`mf_translate_db`.`jaffle_shop`.`invoices`"
+        }
+    }
 
     mf_invoice_month = {
         "name": "invoice_month",
@@ -106,7 +188,10 @@ def test_monthly_time_dimension():
         }
     }
 
-    lkml_invoice_month = to_lkml.dimension_to_lkml(mf_invoice_month)
+    monkeypatch.setattr(to_lkml, 'DBT_NODES', nodes)
+
+    lkml_invoice_month = to_lkml.dimension_to_lkml(dim=mf_invoice_month,
+                                                   from_model=invoices_model)
 
     assert lkml_invoice_month["name"] == "invoice_month"
     assert lkml_invoice_month["type"] == "time"
@@ -115,7 +200,24 @@ def test_monthly_time_dimension():
     assert lkml_invoice_month["sql"] == "date_trunc('month', ${TABLE}.ts_invoiced)"
 
 
-def test_time_dim_without_granularity():
+def test_time_dim_without_granularity(monkeypatch):
+
+    nodes = {
+        "model.jaffle_shop.deliveries": {
+            "columns": {
+                "order_id": {},
+                "ts_ordered": {}
+            },
+            "relation_name": "`mf_translate_db`.`jaffle_shop`.`orders`"
+        }
+    }
+
+    orders_model = {
+        "name": "orders",
+        "node_relation": {
+            "relation_name": "`mf_translate_db`.`jaffle_shop`.`orders`"
+        }
+    }
 
     mf_order_date = {
         "name": "ordered_at_test",
@@ -124,7 +226,10 @@ def test_time_dim_without_granularity():
         "expr": "ts_ordered"
     }
 
-    lkml_order_date = to_lkml.dimension_to_lkml(mf_order_date)
+    monkeypatch.setattr(to_lkml, 'DBT_NODES', nodes)
+
+    lkml_order_date = to_lkml.dimension_to_lkml(dim=mf_order_date,
+                                                from_model=orders_model)
 
     assert lkml_order_date["name"] == "ordered_at_test"
     assert lkml_order_date["type"] == "date_time"
