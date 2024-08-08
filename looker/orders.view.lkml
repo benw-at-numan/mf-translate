@@ -28,14 +28,14 @@ view: orders {
   }
 
   dimension: ordered_at_test {
-    sql: ordered_at ;;
+    sql: ${TABLE}.ordered_at ;;
     type: date_time
   }
 
   dimension: discount_code {}
 
   dimension: order_total_dim {
-    sql: order_total ;;
+    sql: ${TABLE}.order_total ;;
   }
 
   dimension: is_food_order {}
@@ -43,12 +43,12 @@ view: orders {
   dimension: is_drink_order {}
 
   dimension: is_large_order {
-    sql: order_total > 20 ;;
+    sql: ${TABLE}.order_total > 20 ;;
   }
 
   measure: customers_with_orders {
     type: count_distinct
-    sql: customer_id ;;
+    sql: ${TABLE}.customer_id ;;
     label: "Customers w/ Orders"
     description: "Distict count of customers placing orders"
   }
@@ -56,15 +56,36 @@ view: orders {
   measure: new_customer {
     type: count_distinct
     sql: case when (${customers.customer_type}  = 'new')
-            then (customer_id)
+            then (${TABLE}.customer_id)
          end ;;
     label: "New Customers"
     description: "Unique count of new customers."
   }
 
+  measure: order_total {
+    type: sum
+    sql: ${TABLE}.order_total ;;
+    label: "Order Total"
+    description: "Sum of total order amonunt. Includes tax + revenue."
+  }
+
+  measure: orders {
+    type: sum
+    sql: 1 ;;
+    label: "Orders"
+    description: "Count of orders."
+  }
+
+  measure: orders_fill_nulls_with_zero {
+    type: sum
+    sql: 1 ;;
+    label: "Orders (Fill nulls with 0)"
+    description: "Example metric colaescing null to zero."
+  }
+
   measure: food_orders {
     type: sum
-    sql: case when (${orders.is_food_order} = true)
+    sql: case when (${is_food_order} = true)
             then (1)
          end ;;
     label: "Food Orders"
@@ -73,23 +94,16 @@ view: orders {
 
   measure: large_orders {
     type: sum
-    sql: case when (${orders.is_large_order} = true)
+    sql: case when (${is_large_order} = true)
             then (1)
          end ;;
     label: "Large Orders"
     description: "Count of orders with order total over 20."
   }
 
-  measure: order_total {
-    type: sum
-    sql: order_total ;;
-    label: "Order Total"
-    description: "Sum of total order amonunt. Includes tax + revenue."
-  }
-
   measure: pc_drink_orders_for_returning_customers_numerator {
     type: sum
-    sql: case when (${orders.is_drink_order} = true)
+    sql: case when (${is_drink_order} = true)
                and (${customers.customer_type} = 'returning')
             then (1)
          end ;;
@@ -111,17 +125,10 @@ view: orders {
     sql: ${pc_drink_orders_for_returning_customers_numerator} / nullif(${pc_drink_orders_for_returning_customers_denominator}, 0) ;;
   }
 
-  measure: orders {
+  measure: order_cost {
     type: sum
-    sql: 1 ;;
-    label: "Orders"
-    description: "Count of orders."
-  }
-
-  measure: orders_fill_nulls_with_zero {
-    type: sum
-    sql: 1 ;;
-    label: "Orders (Fill nulls with 0)"
-    description: "Example metric colaescing null to zero."
+    sql: ${TABLE}.order_cost ;;
+    label: "Order Cost"
+    description: "Sum of cost for each order item."
   }
 }

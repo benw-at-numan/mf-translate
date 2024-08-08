@@ -121,7 +121,7 @@ def test_category_dim_with_expr(monkeypatch):
 def test_time_dimension(monkeypatch):
 
     nodes = {
-        "model.jaffle_shop.deliveries": {
+        "model.jaffle_shop.orders": {
             "columns": {
                 "order_id": {},
                 "ts_created": {}

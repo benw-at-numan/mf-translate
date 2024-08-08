@@ -69,7 +69,7 @@ def time_granularity_to_timeframes(time_granularity):
     return timeframes[start_index:]
 
 
-def dimension_to_lkml(dim, from_model=None):
+def dimension_to_lkml(dim, from_model):
     """
     Translates metricflow dimension to LookML dimension.
 
@@ -104,7 +104,7 @@ def dimension_to_lkml(dim, from_model=None):
     return lkml_dim
 
 
-def sql_expression_to_lkml(expression, from_model=None):
+def sql_expression_to_lkml(expression, from_model):
     """
     Translates metricflow SQL expression to LookML SQL expression. E.g. '{{ Dimension('delivery__delivery_rating') }}' becomes '${deliveries.delivery_rating}'; revenue * 0.1 becomes ${TABLE}.revenue * 0.1.
 
@@ -116,7 +116,7 @@ def sql_expression_to_lkml(expression, from_model=None):
     """
 
     # Step 1: Replace unqualified table fields with ${TABLE}.field
-    if from_model:
+    if DBT_NODES:
 
         node_dict = { node_data['relation_name']: node_data for node_name, node_data in DBT_NODES.items() }
         node_for_model = node_dict[from_model['node_relation']['relation_name']]
@@ -152,7 +152,10 @@ def sql_expression_to_lkml(expression, from_model=None):
                     model_for_entity = model
                     break
 
-        return "${" + f"{model_for_entity['name']}.{dimension_name}" + "}"
+        if model_for_entity['name'] == from_model['name']:
+            return "${" + f"{dimension_name}" + "}"
+        else:
+            return "${" + f"{model_for_entity['name']}.{dimension_name}" + "}"
 
 
     return re.sub(dim_ref_pattern, translate_dim_ref, expression.strip())
@@ -176,7 +179,7 @@ def measure_to_lkml_type(measure, where_filters):
         return measure["agg"]
 
 
-def measure_to_lkml_sql(measure, where_filters):
+def measure_to_lkml_sql(measure, from_model, where_filters):
     """
     Combines a metricflow measure with a set of where filters to create a single LookML SQL case when expression.
 
@@ -194,22 +197,22 @@ def measure_to_lkml_sql(measure, where_filters):
     measure_expression = measure["expr"] if measure.get("expr") else measure["name"]
 
     if len(where_filters) == 0:
-        sql = sql_expression_to_lkml(measure_expression)
+        sql = sql_expression_to_lkml(measure_expression, from_model)
     else:
         # Incorporate metric's where filters into a SQL `case when` expression. So a filter `{{ Dimension('delivery_id__delivery_rating') }} = 5` becomes `case when (${deliveries.delivery_rating} = 5) then ... end`. An alternative would be to convert where filters to a lkml `filter: [..]`` statement, but this is more trouble than it's worth.
         for index, where_filter in enumerate(where_filters):
             if index == 0:
-                sql =  f'case when ({sql_expression_to_lkml(where_filter["where_sql_template"])})'
+                sql =  f'case when ({sql_expression_to_lkml(where_filter["where_sql_template"], from_model)})'
             else:
-                sql += f'\n               and ({sql_expression_to_lkml(where_filter["where_sql_template"])})'
+                sql += f'\n               and ({sql_expression_to_lkml(where_filter["where_sql_template"], from_model)})'
 
-        sql +=         f'\n            then ({sql_expression_to_lkml(measure_expression)})'
+        sql +=         f'\n            then ({sql_expression_to_lkml(measure_expression, from_model)})'
         sql +=          '\n         end'
 
     return sql
 
 
-def simple_metric_to_lkml_measure(metric, additional_where_filters=[]):
+def simple_metric_to_lkml_measure(metric, from_model, additional_where_filters=[]):
     """
     Translates a metricflow simple metric to a LookML measure.
 
@@ -235,7 +238,7 @@ def simple_metric_to_lkml_measure(metric, additional_where_filters=[]):
 
     lkml_measure["type"] = measure_to_lkml_type(measure, metric_where_filters + additional_where_filters)
 
-    sql = measure_to_lkml_sql(measure, metric_where_filters + additional_where_filters)
+    sql = measure_to_lkml_sql(measure, from_model, metric_where_filters + additional_where_filters)
     if sql:
         lkml_measure["sql"] = sql
 
@@ -244,7 +247,7 @@ def simple_metric_to_lkml_measure(metric, additional_where_filters=[]):
     return lkml_measure
 
 
-def metric_to_lkml_measures(metric):
+def metric_to_lkml_measures(metric, from_model):
     """
     Translates a metricflow metric to one or more LookML measures. Currently supports simple and ratio metrics.
 
@@ -261,7 +264,7 @@ def metric_to_lkml_measures(metric):
 
     elif metric["type"] == "simple":
 
-        lkml_measure = simple_metric_to_lkml_measure(metric)
+        lkml_measure = simple_metric_to_lkml_measure(metric, from_model)
 
         if metric.get("label") != metric['name']:
             lkml_measure["label"] = metric["label"]
@@ -287,6 +290,7 @@ def metric_to_lkml_measures(metric):
             return []
 
         lkml_numerator = simple_metric_to_lkml_measure(metric=numerator_metric,
+                                                       from_model=from_model,
                                                        additional_where_filters=numerator_where_filters + metric_where_filters)
         lkml_numerator["name"] = f"{metric['name']}_numerator"
         lkml_numerator["hidden"] = 'yes'
@@ -301,6 +305,7 @@ def metric_to_lkml_measures(metric):
             return []
 
         lkml_denominator = simple_metric_to_lkml_measure(metric=denominator_metric,
+                                                         from_model=from_model,
                                                          additional_where_filters=denominator_where_filters + metric_where_filters)
         lkml_denominator["name"] = f"{metric['name']}_denominator"
         lkml_denominator["hidden"] = 'yes'
@@ -348,7 +353,7 @@ def model_to_lkml_view(model):
         lkml_view['dimensions'].append(lkml_dim)
 
     for dim in model['dimensions']:
-        lkml_dim = dimension_to_lkml(dim)
+        lkml_dim = dimension_to_lkml(dim, model)
 
         if lkml_dim.get('type') == 'time':
             lkml_view['dimension_groups'].append(lkml_dim)
@@ -357,7 +362,7 @@ def model_to_lkml_view(model):
 
     for metric in METRICS:
 
-        lkml_measures = metric_to_lkml_measures(metric)
+        lkml_measures = metric_to_lkml_measures(metric, model)
 
         for lkml_measure in lkml_measures:
             if lkml_measure['parent_view'] == lkml_view['name']:

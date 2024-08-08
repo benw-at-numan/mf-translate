@@ -15,20 +15,29 @@ if not manifest_dir:
     raise ValueError("Manifest directory must be provided.")
     
 manifest_dir = manifest_dir.rstrip('/')
-manifest_path = f'{manifest_dir}/semantic_manifest.json'
 
 semantic_manifest = {}
 try:
-    with open(manifest_path) as f:
+    with open(f'{manifest_dir}/semantic_manifest.json') as f:
         semantic_manifest = json.load(f)
 except FileNotFoundError:
-    raise FileNotFoundError(f"The file {manifest_path} does not exist.")
+    raise FileNotFoundError(f"The file {f'{manifest_dir}/semantic_manifest.json'} does not exist.")
 except json.JSONDecodeError:
-    raise ValueError(f"The file {manifest_path} is not a valid JSON file.")
+    raise ValueError(f"The file {f'{manifest_dir}/semantic_manifest.json'} is not a valid JSON file.")
 
 model_dict = {model['name']: model for model in semantic_manifest['semantic_models']}
 
-to_lkml.set_semantic_manifest(semantic_manifest)
+manifest = {}
+try:
+    with open(f'{manifest_dir}/manifest.json') as f:
+        manifest = json.load(f)
+except FileNotFoundError:
+    raise FileNotFoundError(f"The file {f'{manifest_dir}/manifest.json'} does not exist.")
+except json.JSONDecodeError:
+    raise ValueError(f"The file {f'{manifest_dir}/manifest.json'} is not a valid JSON file.")
+
+to_lkml.set_manifests(metricflow_semantic_manifest=semantic_manifest,
+                      dbt_manifest=manifest)
 
 # %%
 # TRANSLATE ORDERS
@@ -66,3 +75,4 @@ locations_lkml_view = to_lkml.model_to_lkml_view(model=model_dict['locations'])
 
 with open('looker/locations.view.lkml', 'w') as file:
     file.write(lkml.dump({'views': [locations_lkml_view]}))
+# %%
