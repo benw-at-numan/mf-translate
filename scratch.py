@@ -1,4 +1,5 @@
 # %%
+# IMPORT REQUIREMENTS
 import json
 import lkml
 import mf_translate.to_lkml as to_lkml
@@ -10,6 +11,7 @@ from dotenv import load_dotenv
 load_dotenv()
 
 # %%
+# LOAD MANIFESTS
 manifest_dir = os.getenv('MF_TRANSLATE__DBT_MANIFIEST_DIR')
 if not manifest_dir:
     raise ValueError("Manifest directory must be provided.")
@@ -53,6 +55,7 @@ deliveries_lkml_view = to_lkml.model_to_lkml_view(model=model_dict['deliveries']
 
 with open('looker/deliveries.view.lkml', 'w') as file:
     file.write(lkml.dump({'views': [deliveries_lkml_view]}))
+
 
 # %%
 # TRANSLATE DELIVERY_PEOPLE

@@ -22,88 +22,6 @@ def set_manifests(metricflow_semantic_manifest, dbt_manifest):
     DBT_NODES = dbt_manifest.get('nodes', [])
 
 
-def entity_to_lkml(entity):
-    """
-    Translates metricflow entity to LookML dimension.
-
-    Parameters:
-    entity (dict): The entity to be translated.
-
-    Returns:
-    dict: The LookML dimension.
-    """
-
-    lkml_dim = {}
-
-    lkml_dim["name"] = entity["name"]
-
-    if entity.get("description"):
-        lkml_dim["description"] = entity["description"]
-
-    if entity.get("type") == 'primary':
-        lkml_dim["primary_key"] = 'yes'
-
-    lkml_dim["hidden"] = 'yes'
-
-    if entity.get("expr"):
-        lkml_dim["sql"] = entity["expr"]
-
-    return lkml_dim
-
-
-def time_granularity_to_timeframes(time_granularity):
-    """
-    Helper converting metricflow time granularity to list of Looker timeframes.
-
-    Parameters:
-    time_granularity (str): E.g. 'day', 'week', 'month', 'quarter', 'year'.
-
-    Returns:
-    list: The Looker timeframes.
-    """
-
-    time_granularities = ["day", "week", "month", "quarter", "year"]
-    start_index = time_granularities.index(time_granularity)
-
-    timeframes = ["date", "week", "month", "quarter", "year"]
-    return timeframes[start_index:]
-
-
-def dimension_to_lkml(dim, from_model):
-    """
-    Translates metricflow dimension to LookML dimension.
-
-    Parameters:
-    dim (dict): The metricflow dimension to be translated.
-
-    Returns:
-    dict: The LookML dimension.
-    """
-
-    lkml_dim = {}
-
-    if dim.get("name"):
-        lkml_dim["name"] = dim["name"]
-
-    if dim.get("description"):
-        lkml_dim["description"] = dim["description"]
-
-    if dim.get("label"):
-        lkml_dim["label"] = dim["label"]
-
-    if dim.get("expr"):
-        lkml_dim["sql"] = sql_expression_to_lkml(dim["expr"], from_model)
-
-    if dim.get("type") == "time" and dim.get("type_params") and dim["type_params"].get("time_granularity"):
-        lkml_dim["type"] = "time"
-        lkml_dim["timeframes"] = time_granularity_to_timeframes(dim["type_params"]["time_granularity"])
-
-    elif dim.get("type") == "time":
-        lkml_dim["type"] = "date_time"
-
-    return lkml_dim
-
-
 def sql_expression_to_lkml(expression, from_model):
     """
     Translates metricflow SQL expression to LookML SQL expression. E.g. '{{ Dimension('delivery__delivery_rating') }}' becomes '${deliveries.delivery_rating}'; revenue * 0.1 becomes ${TABLE}.revenue * 0.1.
@@ -159,6 +77,87 @@ def sql_expression_to_lkml(expression, from_model):
 
 
     return re.sub(dim_ref_pattern, translate_dim_ref, expression.strip())
+
+def entity_to_lkml(entity, from_model):
+    """
+    Translates metricflow entity to LookML dimension.
+
+    Parameters:
+    entity (dict): The entity to be translated.
+
+    Returns:
+    dict: The LookML dimension.
+    """
+
+    lkml_dim = {}
+
+    lkml_dim["name"] = entity["name"]
+
+    if entity.get("description"):
+        lkml_dim["description"] = entity["description"]
+
+    if entity.get("type") == 'primary':
+        lkml_dim["primary_key"] = 'yes'
+
+    lkml_dim["hidden"] = 'yes'
+
+    if entity.get("expr"):
+        lkml_dim["sql"] = sql_expression_to_lkml(entity["expr"], from_model)
+
+    return lkml_dim
+
+
+def time_granularity_to_timeframes(time_granularity):
+    """
+    Helper converting metricflow time granularity to list of Looker timeframes.
+
+    Parameters:
+    time_granularity (str): E.g. 'day', 'week', 'month', 'quarter', 'year'.
+
+    Returns:
+    list: The Looker timeframes.
+    """
+
+    time_granularities = ["day", "week", "month", "quarter", "year"]
+    start_index = time_granularities.index(time_granularity)
+
+    timeframes = ["date", "week", "month", "quarter", "year"]
+    return timeframes[start_index:]
+
+
+def dimension_to_lkml(dim, from_model):
+    """
+    Translates metricflow dimension to LookML dimension.
+
+    Parameters:
+    dim (dict): The metricflow dimension to be translated.
+
+    Returns:
+    dict: The LookML dimension.
+    """
+
+    lkml_dim = {}
+
+    if dim.get("name"):
+        lkml_dim["name"] = dim["name"]
+
+    if dim.get("description"):
+        lkml_dim["description"] = dim["description"]
+
+    if dim.get("label"):
+        lkml_dim["label"] = dim["label"]
+
+    if dim.get("expr"):
+        lkml_dim["sql"] = sql_expression_to_lkml(dim["expr"], from_model)
+
+    if dim.get("type") == "time" and dim.get("type_params") and dim["type_params"].get("time_granularity"):
+        lkml_dim["type"] = "time"
+        lkml_dim["timeframes"] = time_granularity_to_timeframes(dim["type_params"]["time_granularity"])
+
+    elif dim.get("type") == "time":
+        lkml_dim["type"] = "date_time"
+
+    return lkml_dim
 
 
 def measure_to_lkml_type(measure, where_filters):
@@ -349,7 +348,7 @@ def model_to_lkml_view(model):
     }
 
     for entity in model['entities']:
-        lkml_dim = entity_to_lkml(entity)
+        lkml_dim = entity_to_lkml(entity, model)
         lkml_view['dimensions'].append(lkml_dim)
 
     for dim in model['dimensions']:

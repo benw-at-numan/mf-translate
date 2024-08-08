@@ -16,7 +16,7 @@ view: locations {
   dimension: location_id {
     primary_key: yes
     hidden: yes
-    sql: location_id ;;
+    sql: ${TABLE}.location_id ;;
   }
 
   dimension: location_name {}

@@ -11,7 +11,12 @@ def test_only_non_null_keys_translated():
         "expr": None
     }
 
-    lkml_dimension = to_lkml.dimension_to_lkml(mf_dimension)
+    orders_model = {
+        "name": "orders"
+    }
+
+    lkml_dimension = to_lkml.dimension_to_lkml(dim=mf_dimension,
+                                               from_model=orders_model)
 
     assert lkml_dimension["name"] == "delivery_id"
     assert 'description' not in lkml_dimension
@@ -75,7 +80,12 @@ def test_category_dimension():
         "expr": None
     }
 
-    lkml_delivery_rating = to_lkml.dimension_to_lkml(mf_delivery_rating)
+    deliveries_model= {
+        "name": "deliveries"
+    }
+
+    lkml_delivery_rating = to_lkml.dimension_to_lkml(dim=mf_delivery_rating,
+                                                     from_model=deliveries_model)
 
     assert lkml_delivery_rating["name"] == "delivery_rating"
     assert lkml_delivery_rating["description"] == "The rating the customer gave the delivery person."

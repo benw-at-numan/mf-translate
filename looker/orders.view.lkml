@@ -19,12 +19,12 @@ view: orders {
 
   dimension: location_id {
     hidden: yes
-    sql: location_id ;;
+    sql: ${TABLE}.location_id ;;
   }
 
   dimension: customer_id {
     hidden: yes
-    sql: customer_id ;;
+    sql: ${TABLE}.customer_id ;;
   }
 
   dimension: ordered_at_test {
