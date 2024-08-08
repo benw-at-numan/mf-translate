@@ -28,8 +28,8 @@ def test_another_cube_metric_with_category_filter(setup_dbt):
 def test_filtered_ratio_cube_metric(setup_dbt):
 
     mf_results = query_metricflow(metrics=['pc_drink_orders_for_returning_customers'],
-                                  group_by=['location__location_name'],
-                                  order_by=['location__location_name'])
+                                  group_by=['location_id__location_name'],
+                                  order_by=['location_id__location_name'])
     mf_results['column_2'] = mf_results['column_2'].round(16)
 
     cube_results = query_cube(query={"measures": ["orders.pc_drink_orders_for_returning_customers"],

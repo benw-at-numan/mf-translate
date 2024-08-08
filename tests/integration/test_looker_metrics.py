@@ -33,8 +33,8 @@ def test_another_looker_metric_with_category_filter(setup_looker_sdk):
 def test_filtered_ratio_looker_metric(setup_dbt, setup_looker_sdk):
 
     mf_results = query_metricflow(metrics=['pc_drink_orders_for_returning_customers'],
-                                  group_by=['location__location_name'],
-                                  order_by=['location__location_name'])
+                                  group_by=['location_id__location_name'],
+                                  order_by=['location_id__location_name'])
 
     lkr_results = query_looker(explore='orders',
                                fields=['locations.location_name',

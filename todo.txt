@@ -1,1 +1,1 @@
-- Apply new sql_expression_to_lkml(dim,from_model) to metric and measures
+- Ok now do the same for Cube
