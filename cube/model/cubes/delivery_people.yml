@@ -6,8 +6,8 @@ cubes:
       - name: delivery_person_id
         type: string
         primary_key: true
-        sql: delivery_person_id
+        sql: "{CUBE}.delivery_person_id"
 
       - name: full_name
         type: string
-        sql: full_name
+        sql: "{CUBE}.full_name"

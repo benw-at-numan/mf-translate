@@ -9,8 +9,8 @@ cubes:
       - name: customer_id
         type: string
         primary_key: true
-        sql: customer_id
+        sql: "{CUBE}.customer_id"
 
       - name: customer_type
         type: string
-        sql: customer_type
+        sql: "{CUBE}.customer_type"

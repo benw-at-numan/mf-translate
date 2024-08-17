@@ -4,11 +4,11 @@ cubes:
 
     joins:
       - name: customers
-        sql: "{orders}.customer_id = {customers}.customer_id"
+        sql: "{CUBE}.customer_id = {customers.customer_id}"
         relationship: many_to_one
 
       - name: locations
-        sql: "{orders}.location_id = {locations}.location_id"
+        sql: "{CUBE}.location_id = {locations.location_id}"
         relationship: many_to_one
 
     dimensions:
@@ -16,7 +16,7 @@ cubes:
       - name: order_id
         type: string
         primary_key: true
-        sql: order_id
+        sql: "{CUBE}.order_id"
 
       - name: ordered_at
         type: time
@@ -27,25 +27,25 @@ cubes:
 
       - name: discount_code
         type: string
-        sql: discount_code
+        sql: "{CUBE}.discount_code"
 
       - name: is_drink_order
         type: string
-        sql: is_drink_order
+        sql: "{CUBE}.is_drink_order"
 
       - name: is_food_order
         type: string
-        sql: is_food_order
+        sql: "{CUBE}.is_food_order"
 
       - name: is_large_order
         type: string
-        sql: (order_total > 20)
+        sql: "({CUBE}.order_total > 20)"
 
     measures:
       - name: order_total
         description: Sum of total order amonunt. Includes tax + revenue.
         type: sum
-        sql: order_total
+        sql: "{CUBE}.order_total"
 
       - name: food_orders
         description: Count of orders that contain food order items.

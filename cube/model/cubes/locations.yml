@@ -9,8 +9,8 @@ cubes:
       - name: location_id
         type: string
         primary_key: true
-        sql: location_id
+        sql: "{CUBE}.location_id"
 
       - name: location_name
         type: string
-        sql: location_name
+        sql: "{CUBE}.location_name"
