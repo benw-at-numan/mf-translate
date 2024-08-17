@@ -1,6 +1,115 @@
+import re
 import os
 
+SEMANTIC_MODELS = []
+METRICS = []
+DBT_NODES = []
+
+def set_manifests(metricflow_semantic_manifest, dbt_manifest):
+    """
+    Sets the SEMANTIC_MODELS, METRICS and DBT_NODES globals from the MetricFlow semantic manifest and the DBT manifest.
+
+    Parameters:
+    semantic_manifest (dict): The semantic manifest loaded from semantic_manifest.json.
+    """
+    global SEMANTIC_MODELS
+    global METRICS
+    global DBT_NODES
+
+    SEMANTIC_MODELS = metricflow_semantic_manifest.get('semantic_models', [])
+    METRICS = metricflow_semantic_manifest.get('metrics', [])
+    DBT_NODES = dbt_manifest.get('nodes', [])
+
+
+def sql_expression_to_cube(expression, from_model):
+    """
+    Translates metricflow SQL expression to LookML SQL expression. E.g. '{{ Dimension('delivery__delivery_rating') }}' becomes '${deliveries.delivery_rating}'; revenue * 0.1 becomes ${TABLE}.revenue * 0.1.
+
+    Parameters:
+    expression (str): The metricflow SQL expression to be translated.
+
+    Returns:
+    str: The Cube SQL expression.
+    """
+
+    # Step 1: Replace unqualified table fields with {CUBE}.field
+    if DBT_NODES:
+
+        node_dict = { node_data['relation_name']: node_data for node_name, node_data in DBT_NODES.items() }
+        node_for_model = node_dict[from_model['node_relation']['relation_name']]
+        node_columns  = node_for_model['columns'].keys()
+
+        # Pattern to match unqualified fields (words) not in {{ Dimension('...') }}
+        unqualified_field_pattern = r"\b(?!\{\{ Dimension\(')\w+\b"
+
+        def translate_unqualified_field(match):
+            if match.group(0) in node_columns:
+                return f"{{CUBE}}.{match.group(0)}"
+            else:
+                return match.group(0)
+
+        expression = re.sub(unqualified_field_pattern, translate_unqualified_field, expression)
+
+
+    # Step 2: Replace {{ Dimension('entity__dimension') }} with {model.dimension}
+    dim_ref_pattern = r"\{\{\s*Dimension\s*\(\s*'([^']+?)'\s*\)\s*\}\}"
+
+    def translate_dim_ref(match):
+
+        dim_inner_ref = match.group(1)                # 'Dimension('delivery__delivery_rating')' -> 'delivery__delivery_rating'
+        entity_name = dim_inner_ref.split("__")[0]    # 'delivery__delivery_rating' -> 'delivery'
+        dimension_name = dim_inner_ref.split("__")[1] # 'delivery__delivery_rating' -> 'delivery_rating'
+
+         # Get model for entity
+        model_for_entity = None
+        for model in SEMANTIC_MODELS:
+            for entity in model["entities"]:
+                if entity["name"] == entity_name and entity["type"] == 'primary':
+                    model_for_entity = model
+                    break
+
+        if model_for_entity['name'] == from_model['name']:
+            return "{" + dimension_name + "}"
+        else:
+            return "{" + f"{model_for_entity['name']}.{dimension_name}" + "}"
+
+
+    return re.sub(dim_ref_pattern, translate_dim_ref, expression.strip())
+
+
+def entity_to_cube(entity, from_model):
+    """
+    Translates a MetricFlow entity to a Cube dimension.
+
+    Parameters:
+    entity (dict): The MetricFlow entity to be translated.
+
+    Returns:
+    dict: The Cube dimension.
+    """
+
+    cube_dim = {}
+
+    if entity.get("name"):
+        cube_dim["name"] = entity["name"]
+
+    if entity.get("description"):
+        cube_dim["description"] = entity["description"]
+
+    if entity.get("type") == 'primary':
+        cube_dim["primary_key"] = True
+
+    cube_dim["public"] = False
+
+    cube_dim["sql"] = sql_expression_to_cube(entity.get("expr") or entity["name"],
+                                             from_model)
+    return cube_dim
+
+
 def add_parentheses_to_sql(sql):
+    """
+    Helper function for adding parentheses to an SQL expression if it is more than one word. Cube generates invalid SQL for dimension expressions with more than one word if they are not enclosed in parentheses.
+    """
 
     if len(sql.split()) > 1:
         return f'({sql})'
@@ -9,6 +118,13 @@ def add_parentheses_to_sql(sql):
 
 
 def set_timezone_for_time_dimension(time_dimension_sql):
+    """
+    Helper function for converting a time dimension SQL expression to a timezone-aware SQL expression. The timezone is set by the MF_TRANSLATE__CUBE_TIMEZONE_FOR_TIME_DIMENSIONS environment variable.
+
+    Cube requires a timestamp whereas DBT wants a datetime:
+         - https://cube.dev/docs/guides/recipes/data-modeling/string-time-dimensions
+         - https://github.com/dbt-labs/metricflow/issues/733
+    """
 
     timezone = os.getenv("MF_TRANSLATE__CUBE_TIMEZONE_FOR_TIME_DIMENSIONS")
 
@@ -24,65 +140,37 @@ def set_timezone_for_time_dimension(time_dimension_sql):
     return add_parentheses_to_sql(time_dimension_sql)
 
 
-def entity_to_cube(entity):
+def dimension_to_cube(dim, from_model):
+    """
+    Translates a MetricFlow dimension to a Cube dimension.
+
+    Parameters:
+    dim (dict): The MetricFlow dimension to be translated.
+
+    Returns:
+    dict: The Cube dimension.
+    """
 
     cube_dim = {}
 
-    # NAME
-    if entity.get("name"):
-        cube_dim["name"] = entity["name"]
+    cube_dim["name"] = dim["name"]
 
-    # DESCRIPTION
-    if entity.get("description"):
-        cube_dim["description"] = entity["description"]
-
-
-    # PRIMARY KEY
-    if entity.get("type") == 'primary':
-        cube_dim["primary_key"] = True
-
-
-    # PUBLIC
-    cube_dim["public"] = False
-
-    # SQL
-    if entity.get("expr"):
-        cube_dim["sql"] = entity["expr"]
-    else:
-        cube_dim["sql"] = entity["name"]
-
-    return cube_dim
-
-
-def dimension_to_cube(dim):
-
-    cube_dim = {}
-
-    # NAME
-    if dim.get("name"):
-        cube_dim["name"] = dim["name"]
-
-    # DESCRIPTION
     if dim.get("description"):
         cube_dim["description"] = dim["description"]
 
-    # TITLE
     if dim.get("label"):
         cube_dim["title"] = dim["label"]
 
-    # SQL
-    if dim.get("expr"):
-        if dim.get("type") == "time":
-            cube_dim["sql"] = set_timezone_for_time_dimension(dim["expr"])
-        else:
-            cube_dim["sql"] = add_parentheses_to_sql(dim["expr"])
-    else:
-        cube_dim["sql"] = dim["name"]
+    cube_expr = sql_expression_to_cube(dim.get("expr") or dim["name"], from_model)
 
-    # TYPE
-    if dim.get("type") == "categorical":
-        cube_dim["type"] = "string"
-    elif dim.get("type") == "time":
+    if dim.get("type") == "time":
+        cube_dim["sql"] = set_timezone_for_time_dimension(cube_expr)
+    else:
+        cube_dim["sql"] = add_parentheses_to_sql(cube_expr)
+
+    if dim.get("type") == "time":
         cube_dim["type"] = "time"
+    elif dim.get("type") == "categorical":
+        cube_dim["type"] = "string"
 
     return cube_dim

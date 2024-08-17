@@ -1,6 +1,5 @@
 import re
 import logging
-import json
 
 SEMANTIC_MODELS = []
 METRICS = []
@@ -41,7 +40,6 @@ def sql_expression_to_lkml(expression, from_model):
         node_columns  = node_for_model['columns'].keys()
 
         # Pattern to match unqualified fields (words) not in {{ Dimension('...') }}
-        # unqualified_field_pattern = r"(?<![\w\{])\b(?!\{\{ Dimension\(')\w+\b"
         unqualified_field_pattern = r"\b(?!\{\{ Dimension\(')\w+\b"
 
         def translate_unqualified_field(match):
@@ -53,7 +51,7 @@ def sql_expression_to_lkml(expression, from_model):
         expression = re.sub(unqualified_field_pattern, translate_unqualified_field, expression)
 
 
-    # Step 2: Replace {{ Dimension('entity__dimension') }} with ${entity.dimension}
+    # Step 2: Replace {{ Dimension('entity__dimension') }} with ${model.dimension}
     dim_ref_pattern = r"\{\{\s*Dimension\s*\(\s*'([^']+?)'\s*\)\s*\}\}"
 
     def translate_dim_ref(match):
@@ -71,7 +69,7 @@ def sql_expression_to_lkml(expression, from_model):
                     break
 
         if model_for_entity['name'] == from_model['name']:
-            return "${" + f"{dimension_name}" + "}"
+            return "${" + dimension_name + "}"
         else:
             return "${" + f"{model_for_entity['name']}.{dimension_name}" + "}"
 

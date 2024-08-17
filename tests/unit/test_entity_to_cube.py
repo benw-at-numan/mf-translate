@@ -1,6 +1,6 @@
 import mf_translate.to_cube as to_cube
 
-def test_primary_key_entity():
+def test_primary_key_entity(monkeypatch):
 
     customer_entity = {
         "name": "customer",
@@ -9,25 +9,63 @@ def test_primary_key_entity():
         "expr": "customer_id"
     }
 
-    cube_customer_dim = to_cube.entity_to_cube(customer_entity)
+    nodes = {
+        "model.jaffle_shop.customers": {
+            "columns": {
+                "customer_id": {}
+            },
+            "relation_name": "`mf_translate_db`.`jaffle_shop`.`customers`"
+        }
+    }
+
+    monkeypatch.setattr(to_cube, 'DBT_NODES', nodes)
+
+    customer_model = {
+        "name": "customers",
+        "node_relation": {
+            "relation_name": "`mf_translate_db`.`jaffle_shop`.`customers`"
+        }
+    }
+
+    cube_customer_dim = to_cube.entity_to_cube(entity=customer_entity,
+                                               from_model=customer_model)
 
     assert cube_customer_dim["name"] == "customer"
     assert cube_customer_dim["description"] == "Customer identifier. Primary key."
     assert "type" not in cube_customer_dim
     assert cube_customer_dim["public"] == False
-    assert cube_customer_dim["sql"] == "customer_id"
+    assert cube_customer_dim["sql"] == "{CUBE}.customer_id"
 
 
-def test_foreign_key_entity():
+def test_foreign_key_entity(monkeypatch):
 
     order_entity = {
         "name": "order_id",
         "type": "foreign",
     }
 
-    cube_order_dim = to_cube.entity_to_cube(order_entity)
+    nodes = {
+        "model.jaffle_shop.orders": {
+            "columns": {
+                "order_id": {}
+            },
+            "relation_name": "`mf_translate_db`.`jaffle_shop`.`orders`"
+        }
+    }
+
+    monkeypatch.setattr(to_cube, 'DBT_NODES', nodes)
+
+    orders_model = {
+        "name": "orders",
+        "node_relation": {
+            "relation_name": "`mf_translate_db`.`jaffle_shop`.`orders`"
+        }
+    }
+
+    cube_order_dim = to_cube.entity_to_cube(entity=order_entity,
+                                            from_model=orders_model)
 
     assert cube_order_dim["name"] == "order_id"
     assert "primary_key" not in cube_order_dim
     assert cube_order_dim["public"] == False
-    assert cube_order_dim["sql"] == "order_id"
+    assert cube_order_dim["sql"] == "{CUBE}.order_id"
