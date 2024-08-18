@@ -1,7 +1,8 @@
 import re
 import os
+import logging
 
-SEMANTIC_MODELS = []
+SEMANTIC_MODELS = [] # Used in sql_expression_to_cube()
 METRICS = []
 DBT_NODES = []
 
@@ -10,7 +11,8 @@ def set_manifests(metricflow_semantic_manifest, dbt_manifest):
     Sets the SEMANTIC_MODELS, METRICS and DBT_NODES globals from the MetricFlow semantic manifest and the DBT manifest.
 
     Parameters:
-    semantic_manifest (dict): The semantic manifest loaded from semantic_manifest.json.
+    metricflow_semantic_manifest (dict): The MetricFlow semantic manifest.
+    dbt_manifest (dict): The DBT manifest.
     """
     global SEMANTIC_MODELS
     global METRICS
@@ -23,7 +25,7 @@ def set_manifests(metricflow_semantic_manifest, dbt_manifest):
 
 def sql_expression_to_cube(expression, from_model):
     """
-    Translates metricflow SQL expression to LookML SQL expression. E.g. '{{ Dimension('delivery__delivery_rating') }}' becomes '${deliveries.delivery_rating}'; revenue * 0.1 becomes ${TABLE}.revenue * 0.1.
+    Translates metricflow SQL expression to Cube SQL expression. E.g. '{{ Dimension('delivery_id__delivery_rating') }}' becomes '{deliveries.delivery_rating}'; revenue * 0.1 becomes {CUBE}.revenue * 0.1.
 
     Parameters:
     expression (str): The metricflow SQL expression to be translated.
@@ -72,7 +74,6 @@ def sql_expression_to_cube(expression, from_model):
             return "{" + dimension_name + "}"
         else:
             return "{" + f"{model_for_entity['name']}.{dimension_name}" + "}"
-
 
     return re.sub(dim_ref_pattern, translate_dim_ref, expression.strip())
 
@@ -174,3 +175,81 @@ def dimension_to_cube(dim, from_model):
         cube_dim["type"] = "string"
 
     return cube_dim
+
+
+def simple_metric_to_cube_measure(metric, from_model, additional_where_filters=[]):
+    """
+    Translates a metricflow simple metric to a Cube measure.
+
+    Parameters:
+    metric (dict): The metricflow metric to be translated.
+    from_model (dict): The parent metricflow model for the metric.
+    additional_where_filters (list): Optional, any additional metricflow where filters to be applied to the metric.
+
+    Returns:
+    dict: The Cube measure.
+    """
+
+    measures_dict = {}
+    for model in SEMANTIC_MODELS:
+        for measure in model["measures"]:
+            measures_dict[measure["name"]] = measure | {'parent_model': model['name']}
+
+    measure = measures_dict[metric["type_params"]["measure"]["name"]]
+
+    cube_measure = {}
+    cube_measure["name"] = metric["name"]
+
+    if measure["agg"] in ['count', 'count_distinct', 'sum', 'min', 'max']:
+        cube_measure["type"] = measure["agg"]
+    elif measure['agg'] == 'average':
+        cube_measure["type"] = 'avg'
+    else:
+        logging.warning(f"Skipped {metric['name']} - {measure['agg']} aggregations are not supported.")
+        return None
+
+    sql = sql_expression_to_cube(measure.get("expr") or measure["name"], from_model)
+    if sql:
+        cube_measure["sql"] = sql
+
+    metric_where_filters = (metric.get("filter") or  {}).get("where_filters", [])
+
+    if metric_where_filters or additional_where_filters:
+        cube_measure["filters"] = []
+        for where_filter in (metric_where_filters + additional_where_filters):
+            cube_measure["filters"].append({"sql": sql_expression_to_cube(where_filter["where_sql_template"], from_model)})
+
+    cube_measure["parent_view"] = measure["parent_model"]
+
+    return cube_measure
+
+
+def metric_to_cube_measures(metric, from_model):
+    """
+    Translates a metricflow metric to one or more Cube measures. Currently supports simple and ratio metrics.
+
+    Parameters:
+    metric (dict): The metricflow metric to be translated.
+
+    Returns:
+    list: A list of Cube measures.
+    """
+
+    if metric["type"] in ["conversion", "cumulative", "derived"]:
+        logging.warning(f"Skipped {metric['name']} - {metric['type']} metrics are not yet supported.")
+        return []
+
+    elif metric["type"] == "simple":
+
+        cube_measure = simple_metric_to_cube_measure(metric, from_model)
+        if not cube_measure:
+            return []
+
+        if metric.get("label") != metric['name']:
+            cube_measure["label"] = metric["label"]
+
+        if metric.get("description") != f"Metric created from measure {metric['name']}":
+            cube_measure["description"] = metric["description"]
+
+        logging.info(f"Translated simple metric {cube_measure['name']}.")
+        return [cube_measure]

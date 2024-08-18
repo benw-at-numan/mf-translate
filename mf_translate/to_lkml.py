@@ -1,16 +1,17 @@
 import re
 import logging
 
-SEMANTIC_MODELS = []
-METRICS = []
-DBT_NODES = []
+SEMANTIC_MODELS = [] # Used by sql_expression_to_lkml(), simple_metric_to_lkml_measure()
+METRICS = []         # ""      metric_to_lkml_measures(), model_to_lkml_view()
+DBT_NODES = []       # ""      sql_expression_to_lkml()
 
 def set_manifests(metricflow_semantic_manifest, dbt_manifest):
     """
     Sets the SEMANTIC_MODELS, METRICS and DBT_NODES globals from the MetricFlow semantic manifest and the DBT manifest.
 
     Parameters:
-    semantic_manifest (dict): The semantic manifest loaded from semantic_manifest.json.
+    metricflow_semantic_manifest (dict): The MetricFlow semantic manifest.
+    dbt_manifest (dict): The DBT manifest.
     """
     global SEMANTIC_MODELS
     global METRICS
@@ -215,6 +216,7 @@ def simple_metric_to_lkml_measure(metric, from_model, additional_where_filters=[
 
     Parameters:
     metric (dict): The metricflow metric to be translated.
+    from_model (dict): The parent metricflow model for the metric.
     additional_where_filters (list): Optional, any additional metricflow where filters to be applied to the metric.
 
     Returns:
