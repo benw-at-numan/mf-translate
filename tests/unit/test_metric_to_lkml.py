@@ -580,7 +580,10 @@ def test_filtered_ratio_metric(monkeypatch):
                 "create_metric": False,
                 "expr": "delivery_id"
             }
-        ]
+        ],
+        "node_relation": {
+            "relation_name": "`mf_translate_db`.`jaffle_shop`.`deliveries`"
+        }
     }
 
     orders_model = {
@@ -592,11 +595,24 @@ def test_filtered_ratio_metric(monkeypatch):
                 "expr": "order_id"
             }
         ],
-        "measures": []
+        "measures": [],
+        "node_relation": {
+            "relation_name": "`mf_translate_db`.`jaffle_shop`.`orders`"
+        }
+    }
+
+    nodes = {
+        "model.jaffle_shop.deliveries": {
+            "columns": {
+                "delivery_id": {}
+            },
+            "relation_name": "`mf_translate_db`.`jaffle_shop`.`deliveries`"
+        }
     }
 
     monkeypatch.setattr(to_lkml, "SEMANTIC_MODELS", [deliveries_model, orders_model])
     monkeypatch.setattr(to_lkml, "METRICS", [pc_deliveries_with_5_stars, delivery_count])
+    monkeypatch.setattr(to_lkml, "DBT_NODES", nodes)
 
     lkml_pc_deliveries_with_5_stars = to_lkml.metric_to_lkml_measures(metric=pc_deliveries_with_5_stars,
                                                                       from_model=deliveries_model)
@@ -611,7 +627,7 @@ def test_filtered_ratio_metric(monkeypatch):
                                     """
                                     case when (${delivery_rating} = 5)
                                           and (coalesce(${orders.discount_code}, 'NO_DISCOUNT') != 'STAFF_ORDER')
-                                        then (delivery_id)
+                                        then (${TABLE}.delivery_id)
                                     end
                                     """)
     assert lkml_numerator["parent_view"] == "deliveries"
@@ -625,7 +641,7 @@ def test_filtered_ratio_metric(monkeypatch):
     assert normalised_strings_equal(lkml_denominator["sql"],
                                     """
                                     case when (coalesce(${orders.discount_code}, 'NO_DISCOUNT') != 'STAFF_ORDER')
-                                        then (delivery_id)
+                                        then (${TABLE}.delivery_id)
                                     end
                                     """)
     assert lkml_denominator["parent_view"] == "deliveries"
@@ -707,10 +723,12 @@ def test_ratio_metric_with_non_simple_numerator(monkeypatch, caplog):
     monkeypatch.setattr(to_lkml, "METRICS", [revenue, cumulative_revenue, pc_revenue_of_total])
 
     with caplog.at_level(logging.WARNING):
-        to_lkml.metric_to_lkml_measures(metric=pc_revenue_of_total, from_model=orders_model)
+        lkml_measures = to_lkml.metric_to_lkml_measures(metric=pc_revenue_of_total, from_model=orders_model)
 
     assert any(record.levelname == 'WARNING'
-                and "non-simple denominator metrics are not currently supported." in record.message for record in caplog.records)
+                and "non-simple denominator metrics are not supported." in record.message for record in caplog.records)
+    
+    assert len(lkml_measures) == 0
 
 
 def test_ratio_metric_with_numerator_and_denominator_from_different_models(monkeypatch, caplog):
@@ -796,7 +814,9 @@ def test_ratio_metric_with_numerator_and_denominator_from_different_models(monke
     monkeypatch.setattr(to_lkml, "METRICS", [delivery_count, revenue, revenue_per_delivery])
 
     with caplog.at_level(logging.WARNING):
-        to_lkml.metric_to_lkml_measures(metric=revenue_per_delivery, from_model=deliveries_model)
+        lkml_measures = to_lkml.metric_to_lkml_measures(metric=revenue_per_delivery, from_model=deliveries_model)
 
     assert any(record.levelname == 'WARNING'
-                and "numerator and denominator from different models not currently supported." in record.message for record in caplog.records)
+                and "numerator and denominator from different models not supported." in record.message for record in caplog.records)
+    
+    assert len(lkml_measures) == 0

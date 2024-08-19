@@ -246,10 +246,67 @@ def metric_to_cube_measures(metric, from_model):
             return []
 
         if metric.get("label") != metric['name']:
-            cube_measure["label"] = metric["label"]
+            cube_measure["title"] = metric["label"]
 
         if metric.get("description") != f"Metric created from measure {metric['name']}":
             cube_measure["description"] = metric["description"]
 
         logging.info(f"Translated simple metric {cube_measure['name']}.")
         return [cube_measure]
+    
+    elif metric["type"] == "ratio":
+
+        metric_where_filters = (metric.get("filter") or  {}).get("where_filters", [])
+        metrics_dict = {m["name"]: m for m in METRICS}
+
+        # NUMERATOR
+        numerator_params = metric["type_params"]["numerator"]
+        numerator_where_filters = (numerator_params.get("filter") or  {}).get("where_filters", [])
+        numerator_metric = metrics_dict[numerator_params["name"]]
+
+        if numerator_metric.get("type") != "simple":
+            logging.warning(f"Skipped ratio metric {metric['name']} - non-simple numerator metrics are not supported.")
+            return []
+
+        cube_numerator = simple_metric_to_cube_measure(metric=numerator_metric,
+                                                       from_model=from_model,
+                                                       additional_where_filters=numerator_where_filters + metric_where_filters)
+        cube_numerator["name"] = f"{metric['name']}_numerator"
+        cube_numerator["public"] = False
+
+        # DENOMINATOR
+        denominator_params = metric["type_params"]["denominator"]
+        denominator_where_filters = (denominator_params.get("filter") or  {}).get("where_filters", [])
+        denominator_metric = metrics_dict[denominator_params["name"]]
+
+        if denominator_metric.get("type") != "simple":
+            logging.warning(f"Skipped ratio metric {metric['name']} - non-simple denominator metrics are not supported.")
+            return []
+
+        cube_denominator = simple_metric_to_cube_measure(metric=denominator_metric,
+                                                         from_model=from_model,
+                                                         additional_where_filters=denominator_where_filters + metric_where_filters)
+        cube_denominator["name"] = f"{metric['name']}_denominator"
+        cube_denominator["public"] = False
+
+        # RATIO
+        cube_ratio = {}
+        cube_ratio["name"] = metric["name"]
+        cube_ratio["type"] = "number"
+
+        if metric.get("label"):
+            cube_ratio["title"] = metric["label"]
+
+        if metric.get("description"):
+            cube_ratio["description"] = metric["description"]
+
+        cube_ratio["sql"] = f"{{{cube_numerator['name']}}} / nullif({{{cube_denominator['name']}}}, 0)"
+
+        if cube_numerator["parent_view"] != cube_denominator["parent_view"]:
+            logging.warning(f"Skipped ratio metric {cube_ratio['name']} - numerator and denominator from different models not supported.")
+            return []
+
+        cube_ratio["parent_view"] = cube_numerator["parent_view"]
+
+        logging.info(f"Translated ratio metric {cube_ratio['name']}.")
+        return [cube_numerator, cube_denominator, cube_ratio]
