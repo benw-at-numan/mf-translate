@@ -25,10 +25,11 @@ def set_manifests(metricflow_semantic_manifest, dbt_manifest):
 
 def sql_expression_to_cube(expression, from_model):
     """
-    Translates metricflow SQL expression to Cube SQL expression. E.g. '{{ Dimension('delivery_id__delivery_rating') }}' becomes '{deliveries.delivery_rating}'; revenue * 0.1 becomes {CUBE}.revenue * 0.1.
+    Translates MetricFlow SQL expression to Cube SQL expression. E.g. '{{ Dimension('delivery_id__delivery_rating') }}' becomes '{deliveries.delivery_rating}'; revenue * 0.1 becomes {CUBE}.revenue * 0.1.
 
     Parameters:
-    expression (str): The metricflow SQL expression to be translated.
+    expression (str): The MetricFlow SQL expression to be translated.
+    from_model (dict): The parent MetricFlow model which the expression belongs to.
 
     Returns:
     str: The Cube SQL expression.
@@ -84,6 +85,7 @@ def entity_to_cube(entity, from_model):
 
     Parameters:
     entity (dict): The MetricFlow entity to be translated.
+    from_model (dict): The parent MetricFlow model for the entity.
 
     Returns:
     dict: The Cube dimension.
@@ -147,6 +149,7 @@ def dimension_to_cube(dim, from_model):
 
     Parameters:
     dim (dict): The MetricFlow dimension to be translated.
+    from_model (dict): The parent MetricFlow model for the dimension
 
     Returns:
     dict: The Cube dimension.
@@ -179,12 +182,12 @@ def dimension_to_cube(dim, from_model):
 
 def simple_metric_to_cube_measure(metric, from_model, additional_where_filters=[]):
     """
-    Translates a metricflow simple metric to a Cube measure.
+    Translates a MetricFlow simple metric to a Cube measure.
 
     Parameters:
-    metric (dict): The metricflow metric to be translated.
-    from_model (dict): The parent metricflow model for the metric.
-    additional_where_filters (list): Optional, any additional metricflow where filters to be applied to the metric.
+    metric (dict): The MetricFlow metric to be translated.
+    from_model (dict): The parent MetricFlow model for the metric.
+    additional_where_filters (list): Optional, any additional MetricFlow where filters to be applied to the metric.
 
     Returns:
     dict: The Cube measure.
@@ -226,10 +229,11 @@ def simple_metric_to_cube_measure(metric, from_model, additional_where_filters=[
 
 def metric_to_cube_measures(metric, from_model):
     """
-    Translates a metricflow metric to one or more Cube measures. Currently supports simple and ratio metrics.
+    Translates a MetricFlow metric to one or more Cube measures. Currently supports simple and ratio metrics.
 
     Parameters:
-    metric (dict): The metricflow metric to be translated.
+    metric (dict): The MetricFlow metric to be translated.
+    from_model (dict): The parent MetricFlow model which the metric belongs to.
 
     Returns:
     list: A list of Cube measures.
@@ -253,7 +257,7 @@ def metric_to_cube_measures(metric, from_model):
 
         logging.info(f"Translated simple metric {cube_measure['name']}.")
         return [cube_measure]
-    
+
     elif metric["type"] == "ratio":
 
         metric_where_filters = (metric.get("filter") or  {}).get("where_filters", [])
@@ -310,3 +314,35 @@ def metric_to_cube_measures(metric, from_model):
 
         logging.info(f"Translated ratio metric {cube_ratio['name']}.")
         return [cube_numerator, cube_denominator, cube_ratio]
+
+
+def model_to_cube_cube(model):
+    """
+    Translates a MetricFlow model to a Cube.dev cube.
+    """
+
+    cube = {
+        "name": model['name'],
+        "sql_table": model["node_relation"]["relation_name"],
+        "dimensions": [],
+        "measures": []
+    }
+
+    for entity in model['entities']:
+        cube_dim = entity_to_cube(entity, model)
+        cube['dimensions'].append(cube_dim)
+
+    for dim in model['dimensions']:
+        cube_dim = dimension_to_cube(dim, model)
+        cube['dimensions'].append(cube_dim)
+
+    for metric in METRICS:
+
+        cube_measures = metric_to_cube_measures(metric, model)
+
+        for cube_measure in cube_measures:
+            if cube_measure['parent_view'] == cube['name']:
+                del cube_measure['parent_view']
+                cube['measures'].append(cube_measure)
+
+    return cube

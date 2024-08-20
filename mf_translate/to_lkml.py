@@ -24,10 +24,11 @@ def set_manifests(metricflow_semantic_manifest, dbt_manifest):
 
 def sql_expression_to_lkml(expression, from_model):
     """
-    Translates metricflow SQL expression to LookML SQL expression. E.g. '{{ Dimension('delivery__delivery_rating') }}' becomes '${deliveries.delivery_rating}'; revenue * 0.1 becomes ${TABLE}.revenue * 0.1.
+    Translates MetricFlow SQL expression to LookML SQL expression. E.g. '{{ Dimension('delivery__delivery_rating') }}' becomes '${deliveries.delivery_rating}'; revenue * 0.1 becomes ${TABLE}.revenue * 0.1.
 
     Parameters:
-    expression (str): The metricflow SQL expression to be translated.
+    expression (str): The MetricFlow SQL expression to be translated.
+    from_model (dict): The parent MetricFlow model for the expression.
 
     Returns:
     str: The LookML SQL expression.
@@ -79,10 +80,11 @@ def sql_expression_to_lkml(expression, from_model):
 
 def entity_to_lkml(entity, from_model):
     """
-    Translates metricflow entity to LookML dimension.
+    Translates MetricFlow entity to LookML dimension.
 
     Parameters:
     entity (dict): The entity to be translated.
+    from_model (dict): The parent MetricFlow model for the entity
 
     Returns:
     dict: The LookML dimension.
@@ -108,13 +110,13 @@ def entity_to_lkml(entity, from_model):
 
 def time_granularity_to_timeframes(time_granularity):
     """
-    Helper converting metricflow time granularity to list of Looker timeframes.
+    Helper converting MetricFlow time granularity to list of Looker timeframes.
 
     Parameters:
     time_granularity (str): E.g. 'day', 'week', 'month', 'quarter', 'year'.
 
     Returns:
-    list: The Looker timeframes.
+    list: of the Looker timeframes.
     """
 
     time_granularities = ["day", "week", "month", "quarter", "year"]
@@ -126,10 +128,11 @@ def time_granularity_to_timeframes(time_granularity):
 
 def dimension_to_lkml(dim, from_model):
     """
-    Translates metricflow dimension to LookML dimension.
+    Translates MetricFlow dimension to LookML dimension.
 
     Parameters:
-    dim (dict): The metricflow dimension to be translated.
+    dim (dict): The MetricFlow dimension to be translated.
+    from_model (dict): The parent MetricFlow model for the dimension.
 
     Returns:
     dict: The LookML dimension.
@@ -161,11 +164,11 @@ def dimension_to_lkml(dim, from_model):
 
 def measure_to_lkml_type(measure, where_filters):
     """
-    Translates metricflow measure to LookML measure type, count, count_distinct, sum, average, min, max.
+    Translates MetricFlow measure to LookML measure type, count, count_distinct, sum, average, min, max.
 
     Parameters:
-    measure (dict): The metricflow measure to be translated.
-    where_filters (list): The metricflow where filters applied to the measure.
+    measure (dict): The MetricFlow measure to be translated.
+    where_filters (list): The MetricFlow where filters applied to the measure.
 
     Returns:
     str: The LookML measure type.
@@ -179,11 +182,12 @@ def measure_to_lkml_type(measure, where_filters):
 
 def measure_to_lkml_sql(measure, from_model, where_filters):
     """
-    Combines a metricflow measure with a set of where filters to create a single LookML SQL case when expression.
+    Combines a MetricFlow measure with a set of where filters to create a single LookML SQL case when expression.
 
     Parameters:
-    measure (dict): The metricflow measure to be translated.
-    where_filters (list): The metricflow where filters applied to the measure.
+    measure (dict): The MetricFlow measure to be translated.
+    from_model (dict): The parent MetricFlow model for the measure.
+    where_filters (list): The MetricFlow where filters applied to the measure.
 
     Returns:
     str: The LookML SQL expression.
@@ -212,12 +216,12 @@ def measure_to_lkml_sql(measure, from_model, where_filters):
 
 def simple_metric_to_lkml_measure(metric, from_model, additional_where_filters=[]):
     """
-    Translates a metricflow simple metric to a LookML measure.
+    Translates a MetricFlow simple metric to a LookML measure.
 
     Parameters:
-    metric (dict): The metricflow metric to be translated.
-    from_model (dict): The parent metricflow model for the metric.
-    additional_where_filters (list): Optional, any additional metricflow where filters to be applied to the metric.
+    metric (dict): The MetricFlow metric to be translated.
+    from_model (dict): The parent MetricFlow model for the metric.
+    additional_where_filters (list): Optional, any additional MetricFlow where filters to be applied to the metric.
 
     Returns:
     dict: The LookML measure.
@@ -248,10 +252,11 @@ def simple_metric_to_lkml_measure(metric, from_model, additional_where_filters=[
 
 def metric_to_lkml_measures(metric, from_model):
     """
-    Translates a metricflow metric to one or more LookML measures. Currently supports simple and ratio metrics.
+    Translates a MetricFlow metric to one or more LookML measures. Currently supports simple and ratio metrics.
 
     Parameters:
-    metric (dict): The metricflow metric to be translated.
+    metric (dict): The MetricFlow metric to be translated.
+    from_model (dict): The parent MetricFlow model for the metric
 
     Returns:
     list: A list of LookML measures.
@@ -333,6 +338,9 @@ def metric_to_lkml_measures(metric, from_model):
 
 
 def model_to_lkml_view(model):
+    """
+    Translates a MetricFlow model to a LookML view.
+    """
 
     lkml_view = {
         "name": model['name'],
