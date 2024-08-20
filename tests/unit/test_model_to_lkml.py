@@ -1,24 +1,5 @@
 import mf_translate.to_lkml as to_lkml
 
-def test_model_to_sql_table_name():
-
-    model = {
-        "name": "deliveries",
-        "defaults": {
-            "agg_time_dimension": "delivered_at"
-        },
-        "description": "Delivery fact table. This table is at the delivery grain with one row per delivery.\n",
-        "node_relation": {
-            "alias": "deliveries",
-            "schema_name": "jaffle_shop",
-            "database": "fresh-iridium-428713-j5",
-            "relation_name": "`fresh-iridium-428713-j5`.`jaffle_shop`.`deliveries`"
-        }
-    }
-
-    assert to_lkml.model_to_sql_table_name(model) == "`fresh-iridium-428713-j5`.`jaffle_shop`.`deliveries`"
-
-
 def test_basic_model_to_lkml_view(monkeypatch):
 
     deliveries_model = {

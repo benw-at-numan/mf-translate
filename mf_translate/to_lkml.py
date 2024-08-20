@@ -332,16 +332,11 @@ def metric_to_lkml_measures(metric, from_model):
         return [lkml_numerator, lkml_denominator, lkml_ratio]
 
 
-def model_to_sql_table_name(model):
-
-    return model["node_relation"]["relation_name"]
-
-
 def model_to_lkml_view(model):
 
     lkml_view = {
         "name": model['name'],
-        "sql_table_name": model_to_sql_table_name(model),
+        "sql_table_name": model["node_relation"]["relation_name"],
         "dimension_groups": [],
         "dimensions": [],
         "measures": []
