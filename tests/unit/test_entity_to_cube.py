@@ -32,7 +32,7 @@ def test_primary_key_entity(monkeypatch):
 
     assert cube_customer_dim["name"] == "customer"
     assert cube_customer_dim["description"] == "Customer identifier. Primary key."
-    assert "type" not in cube_customer_dim
+    assert cube_customer_dim["type"] == "string"
     assert cube_customer_dim["public"] == False
     assert cube_customer_dim["sql"] == "{CUBE}.customer_id"
 
@@ -69,3 +69,4 @@ def test_foreign_key_entity(monkeypatch):
     assert "primary_key" not in cube_order_dim
     assert cube_order_dim["public"] == False
     assert cube_order_dim["sql"] == "{CUBE}.order_id"
+    assert cube_order_dim["type"] == "string"

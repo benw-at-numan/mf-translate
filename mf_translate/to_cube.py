@@ -102,6 +102,8 @@ def entity_to_cube(entity, from_model):
     if entity.get("type") == 'primary':
         cube_dim["primary_key"] = True
 
+    cube_dim["type"] = "string"
+
     cube_dim["public"] = False
 
     cube_dim["sql"] = sql_expression_to_cube(entity.get("expr") or entity["name"],
@@ -174,7 +176,7 @@ def dimension_to_cube(dim, from_model):
 
     if dim.get("type") == "time":
         cube_dim["type"] = "time"
-    elif dim.get("type") == "categorical":
+    else:
         cube_dim["type"] = "string"
 
     return cube_dim

@@ -4,12 +4,15 @@ cubes:
     primary_key: true
     public: false
     sql: '{CUBE}.order_id'
+    type: string
   - name: location_id
     public: false
     sql: '{CUBE}.location_id'
+    type: string
   - name: customer_id
     public: false
     sql: '{CUBE}.customer_id'
+    type: string
   - name: ordered_at
     sql: '{CUBE}.ordered_at'
     type: time

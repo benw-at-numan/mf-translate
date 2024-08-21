@@ -35,7 +35,7 @@ def test_only_non_null_keys_translated(monkeypatch):
     assert cube_dim["name"] == "delivery_id"
     assert 'description' not in cube_dim
     assert 'title' not in cube_dim
-    assert 'type' not in cube_dim
+    assert cube_dim["type"] == "string"
     assert cube_dim["sql"] == "{CUBE}.delivery_id"
 
 
