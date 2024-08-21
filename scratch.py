@@ -1,15 +1,19 @@
 # %%
 # IMPORT REQUIREMENTS
 import json
-import lkml, yaml
 import mf_translate.to_lkml as to_lkml
 import mf_translate.to_cube as to_cube
-import os
+
+import lkml, yaml
 import logging
 logging.basicConfig(level=logging.DEBUG, format='%(levelname)s: %(message)s')
 
+import os
 from dotenv import load_dotenv
 load_dotenv()
+
+# PARSE DBT PROJECT
+# TBC
 
 # %%
 # LOAD MANIFESTS
@@ -52,8 +56,9 @@ to_cube.set_manifests(metricflow_semantic_manifest=semantic_manifest,
     # file.write(lkml.dump({'views': [orders_lkml_view]}))
 
 orders_cube = to_cube.model_to_cube_cube(model=model_dict['orders'])
-with open('cube/model/cubes/orders.yml', 'w') as file:
-    yaml.dump({"cubes": [orders_cube]}, file, default_flow_style=False)
+orders_cube['name'] = 'orders_base'
+with open('cube/model/cubes/orders_base.yml', 'w') as file:
+    yaml.dump({"cubes": [orders_cube]}, file)
 
 # %%
 # TRANSLATE DELIVERIES
