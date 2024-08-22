@@ -5,7 +5,10 @@ import json
 import mf_translate.to_lkml as to_lkml
 import mf_translate.to_cube as to_cube
 
-import lkml, yaml
+import lkml
+from ruamel.yaml import YAML
+yaml = YAML()
+
 import logging
 logging.basicConfig(level=logging.DEBUG, format='%(levelname)s: %(message)s')
 
@@ -54,22 +57,29 @@ to_cube.set_manifests(metricflow_semantic_manifest=semantic_manifest,
                       dbt_manifest=manifest)
 
 # %%
+# TRANSLATE DELIVERIES
+deliveries_lkml_view = to_lkml.model_to_lkml_view(model=model_dict['deliveries'])
+
+with open('looker/deliveries.view.lkml', 'w') as file:
+    file.write(lkml.dump({'views': [deliveries_lkml_view]}))
+
+deliveries_cube = to_cube.model_to_cube_cube(model=model_dict['deliveries'])
+deliveries_cube['name'] = 'deliveries_base'
+with open('cube/model/cubes/deliveries_base.yml', 'w') as file:
+    yaml.dump({"cubes": [deliveries_cube]}, file)
+
+# %%
 # TRANSLATE ORDERS
-# orders_lkml_view = to_lkml.model_to_lkml_view(model=model_dict['orders'])
-# with open('looker/orders.view.lkml', 'w') as file:
-    # file.write(lkml.dump({'views': [orders_lkml_view]}))
+orders_lkml_view = to_lkml.model_to_lkml_view(model=model_dict['orders'])
+with open('looker/orders.view.lkml', 'w') as file:
+    file.write(lkml.dump({'views': [orders_lkml_view]}))
 
 orders_cube = to_cube.model_to_cube_cube(model=model_dict['orders'])
 orders_cube['name'] = 'orders_base'
 with open('cube/model/cubes/orders_base.yml', 'w') as file:
     yaml.dump({"cubes": [orders_cube]}, file)
 
-# %%
-# TRANSLATE DELIVERIES
-deliveries_lkml_view = to_lkml.model_to_lkml_view(model=model_dict['deliveries'])
 
-with open('looker/deliveries.view.lkml', 'w') as file:
-    file.write(lkml.dump({'views': [deliveries_lkml_view]}))
 
 
 # %%

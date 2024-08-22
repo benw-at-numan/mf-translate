@@ -1,23 +1,25 @@
 cubes:
-- dimensions:
+- name: orders_base
+  sql_table: '`fresh-iridium-428713-j5`.`jaffle_shop`.`orders`'
+  dimensions:
   - name: order_id
     primary_key: true
+    type: string
     public: false
     sql: '{CUBE}.order_id'
-    type: string
   - name: location_id
+    type: string
     public: false
     sql: '{CUBE}.location_id'
-    type: string
   - name: customer_id
+    type: string
     public: false
     sql: '{CUBE}.customer_id'
-    type: string
   - name: ordered_at
-    sql: '{CUBE}.ordered_at'
+    sql: TIMESTAMP({CUBE}.ordered_at, 'UTC')
     type: time
   - name: ordered_at_test
-    sql: '{CUBE}.ordered_at'
+    sql: TIMESTAMP({CUBE}.ordered_at, 'UTC')
     type: time
   - name: discount_code
     sql: '{CUBE}.discount_code'
@@ -35,70 +37,68 @@ cubes:
     sql: ({CUBE}.order_total > 20)
     type: string
   measures:
-  - description: Distict count of customers placing orders
-    name: customers_with_orders
+  - name: customers_with_orders
+    type: count_distinct
     sql: '{CUBE}.customer_id'
     title: Customers w/ Orders
+    description: Distict count of customers placing orders
+  - name: new_customer
     type: count_distinct
-  - description: Unique count of new customers.
-    filters:
-    - sql: '{customers.customer_type}  = ''new'''
-    name: new_customer
     sql: '{CUBE}.customer_id'
+    filters:
+    - sql: "{customers.customer_type}  = 'new'"
     title: New Customers
-    type: count_distinct
-  - description: Sum of total order amonunt. Includes tax + revenue.
-    name: order_total
+    description: Unique count of new customers.
+  - name: order_total
+    type: sum
     sql: '{CUBE}.order_total'
     title: Order Total
+    description: Sum of total order amonunt. Includes tax + revenue.
+  - name: orders
     type: sum
-  - description: Count of orders.
-    name: orders
     sql: '1'
     title: Orders
+    description: Count of orders.
+  - name: orders_fill_nulls_with_zero
     type: sum
-  - description: Example metric colaescing null to zero.
-    name: orders_fill_nulls_with_zero
     sql: '1'
     title: Orders (Fill nulls with 0)
+    description: Example metric colaescing null to zero.
+  - name: food_orders
     type: sum
-  - description: Count of orders that contain food order items
+    sql: '1'
     filters:
     - sql: '{is_food_order} = true'
-    name: food_orders
-    sql: '1'
     title: Food Orders
+    description: Count of orders that contain food order items
+  - name: large_orders
     type: sum
-  - description: Count of orders with order total over 20.
+    sql: '1'
     filters:
     - sql: '{is_large_order} = true'
-    name: large_orders
-    sql: '1'
     title: Large Orders
+    description: Count of orders with order total over 20.
+  - name: pc_drink_orders_for_returning_customers_numerator
     type: sum
-  - filters:
+    sql: '1'
+    filters:
     - sql: '{is_drink_order} = true'
-    - sql: '{customers.customer_type} = ''returning'''
-    name: pc_drink_orders_for_returning_customers_numerator
+    - sql: "{customers.customer_type} = 'returning'"
     public: false
-    sql: '1'
+  - name: pc_drink_orders_for_returning_customers_denominator
     type: sum
-  - filters:
-    - sql: '{customers.customer_type} = ''returning'''
-    name: pc_drink_orders_for_returning_customers_denominator
+    sql: '1'
+    filters:
+    - sql: "{customers.customer_type} = 'returning'"
     public: false
-    sql: '1'
-    type: sum
-  - description: Percentage of orders which are drink orders.
-    name: pc_drink_orders_for_returning_customers
+  - name: pc_drink_orders_for_returning_customers
+    type: number
+    title: Drink orders for returning customers (%)
+    description: Percentage of orders which are drink orders.
     sql: '{pc_drink_orders_for_returning_customers_numerator} / nullif({pc_drink_orders_for_returning_customers_denominator},
       0)'
-    title: Drink orders for returning customers (%)
-    type: number
-  - description: Sum of cost for each order item.
-    name: order_cost
+  - name: order_cost
+    type: sum
     sql: '{CUBE}.order_cost'
     title: Order Cost
-    type: sum
-  name: orders_base
-  sql_table: '`fresh-iridium-428713-j5`.`jaffle_shop`.`orders`'
+    description: Sum of cost for each order item.

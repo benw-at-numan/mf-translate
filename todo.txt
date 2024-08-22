@@ -1,5 +1,4 @@
 Next
-- Order cube YAML output
 - CLI command
     mf-translate --model orders --to-lkml > looker/orders_base.lkml
     mf-translate --model deliveries --to-cube > cube/cubes/deliveries_base.yml
