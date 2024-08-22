@@ -30,17 +30,13 @@ view: deliveries {
   measure: pc_deliveries_with_5_stars_numerator {
     type: count_distinct
     sql: case when (${delivery_rating} = 5)
-               and (coalesce(${orders.discount_code}, 'NO_DISCOUNT') != 'STAFF_ORDER')
             then (${TABLE}.delivery_id)
          end ;;
     hidden: yes
   }
 
   measure: pc_deliveries_with_5_stars_denominator {
-    type: count_distinct
-    sql: case when (coalesce(${orders.discount_code}, 'NO_DISCOUNT') != 'STAFF_ORDER')
-            then (${TABLE}.delivery_id)
-         end ;;
+    type: count
     hidden: yes
   }
 

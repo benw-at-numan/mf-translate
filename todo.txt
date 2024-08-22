@@ -1,7 +1,8 @@
 Next
 - CLI command
     mf-translate --model orders --to-lkml > looker/orders_base.lkml
-    mf-translate --model deliveries --to-cube > cube/cubes/deliveries_base.yml
+    mf-translate --model deliveries --to-cube --overrides "{'name': 'orders_base', 'public': False}" \
+        > cube/cubes/deliveries_base.yml
 
 
 Later
