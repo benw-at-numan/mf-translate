@@ -10,7 +10,7 @@ def setup_dbt():
     # Load DBT PROFILE DIR
     load_dotenv()
 
-    result = subprocess.run(['dbt', 'parse'], capture_output=True, text=True, cwd='dbt/')
+    result = subprocess.run(['dbt', 'parse', '--no-partial-parse'], capture_output=True, text=True, cwd='dbt/')
     if result.returncode != 0:
         raise RuntimeError(f"Dbt project could not be parsed: {result.stderr}")
     

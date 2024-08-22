@@ -137,9 +137,9 @@ def set_timezone_for_time_dimension(time_dimension_sql):
 
         target_database = os.getenv("MF_TRANSLATE__TARGET_DATABASE")
 
-        if target_database == "bigquery":
+        if target_database.lower() == "bigquery":
             return f"TIMESTAMP({time_dimension_sql}, '{timezone}')"
-        elif target_database == "snowflake":
+        elif target_database.lower() == "snowflake":
             return f"CONVERT_TIMEZONE('{timezone}', {time_dimension_sql})"
 
     return add_parentheses_to_sql(time_dimension_sql)

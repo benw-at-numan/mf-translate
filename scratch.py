@@ -1,5 +1,6 @@
 # %%
 # IMPORT REQUIREMENTS
+import subprocess
 import json
 import mf_translate.to_lkml as to_lkml
 import mf_translate.to_cube as to_cube
@@ -12,8 +13,11 @@ import os
 from dotenv import load_dotenv
 load_dotenv()
 
+# %%
 # PARSE DBT PROJECT
-# TBC
+result = subprocess.run(['dbt', 'parse', '--no-partial-parse'], capture_output=True, text=True, cwd='dbt/')
+if result.returncode != 0:
+    raise RuntimeError(f"Dbt project could not be parsed: {result.stderr}")
 
 # %%
 # LOAD MANIFESTS
