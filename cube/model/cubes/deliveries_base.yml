@@ -27,10 +27,13 @@ cubes:
     sql: '{CUBE}.delivery_id'
     filters:
     - sql: '{delivery_rating} = 5'
+    - sql: coalesce({orders.discount_code}, 'NO_DISCOUNT') != 'STAFF_ORDER'
     public: false
   - name: pc_deliveries_with_5_stars_denominator
     type: count
     sql: '{CUBE}.delivery_id'
+    filters:
+    - sql: coalesce({orders.discount_code}, 'NO_DISCOUNT') != 'STAFF_ORDER'
     public: false
   - name: pc_deliveries_with_5_stars
     type: number
