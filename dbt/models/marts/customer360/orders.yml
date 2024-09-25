@@ -8,10 +8,7 @@ models:
           sql: 1
         food_orders:
           type: sum
-          sql: |
-            case when (${is_food_order} = true)
-              then (1)
-            end
+          sql: 1
 
     columns:
       - name: order_id
