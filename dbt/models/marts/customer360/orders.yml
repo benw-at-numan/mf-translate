@@ -3,7 +3,7 @@ models:
     description: Order overview data mart, offering key details for each order including if it's a customer's first order and a food vs. drink item breakdown. One row per order.
     meta:
       metrics:
-        food_orders:
+        orders:
           type: sum
           sql: 1
 
