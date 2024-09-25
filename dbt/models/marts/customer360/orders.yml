@@ -1,6 +1,18 @@
 models:
   - name: orders
-    description: Order overview data mart, offering key details for each order inlcluding if it's a customer's first order and a food vs. drink item breakdown. One row per order.
+    description: Order overview data mart, offering key details for each order including if it's a customer's first order and a food vs. drink item breakdown. One row per order.
+    meta:
+      metrics:
+        orders:
+          type: sum
+          sql: 1
+        food_orders:
+          type: sum
+          sql: |
+            case when (${is_food_order} = true)
+              then (1)
+            end
+
     columns:
       - name: order_id
         description: The unique key of the orders mart.
