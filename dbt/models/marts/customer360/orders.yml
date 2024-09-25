@@ -21,7 +21,8 @@ models:
         description: The total amount of the order in USD including tax.
         meta:
           metrics: 
-            order_total:
+            order_total_total:
+              label: Order Total
               type: sum
       - name: ordered_at
         description: The timestamp the order was placed at.
