@@ -19,6 +19,10 @@ models:
         description: The discount code applied to the order.
       - name: order_total
         description: The total amount of the order in USD including tax.
+        meta:
+          metrics: 
+            order_total:
+              type: sum
       - name: ordered_at
         description: The timestamp the order was placed at.
       - name: count_food_items
