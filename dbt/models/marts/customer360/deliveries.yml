@@ -1,6 +1,31 @@
 models:
   - name: deliveries
     description: Delivery data mart. This table is at the delivery grain with one row per delivery.
+    meta:
+      joins:
+        - join: orders
+          sql_on: deliveries.order_id = orders.order_id
+        - join: customers
+          sql_on: orders.customer_id = customers.customer_id
+      metrics:
+        delivery_count:
+          type: count
+          sql: delivery_id
+        pc_deliveries_with_5_stars_numerator:
+          type: count
+          sql: |
+            case when (${delivery_rating} = 5)
+               and (coalesce(${orders.discount_code}, 'NO_DISCOUNT') != 'STAFF_ORDER')
+                then (delivery_id)
+            end 
+          hidden: true
+        pc_deliveries_with_5_stars_denominator:
+          type: count
+          sql: |
+            case when (coalesce(${orders.discount_code}, 'NO_DISCOUNT') != 'STAFF_ORDER')
+              then (delivery_id)
+            end
+          hidden: true
 
     columns:
       - name: delivery_id

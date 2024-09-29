@@ -5,6 +5,8 @@ models:
       joins:
         - join: customers
           sql_on: orders.customer_id = customers.customer_id
+        - join: stg_locations
+          sql_on: orders.location_id = stg_locations.location_id
       metrics:
         order_total_metric: # Note that name had to be changed to avoid conflict with the column name
           label: Order Total
