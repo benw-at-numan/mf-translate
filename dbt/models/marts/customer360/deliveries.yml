@@ -7,6 +7,8 @@ models:
           sql_on: deliveries.order_id = orders.order_id
         - join: customers
           sql_on: orders.customer_id = customers.customer_id
+        - join: delivery_people
+          sql_on: deliveries.delivery_person_id = delivery_people.delivery_person_id
       metrics:
         delivery_count:
           type: count
@@ -26,6 +28,12 @@ models:
               then (delivery_id)
             end
           hidden: true
+        pc_deliveries_with_5_stars:
+          type: number
+          label: "Deliveries with 5 stars (%)"
+          description: "Percentage of deliveries that received a 5-star rating."
+          sql: ${pc_deliveries_with_5_stars_numerator} / nullif(${pc_deliveries_with_5_stars_denominator}, 0)
+
 
     columns:
       - name: delivery_id
