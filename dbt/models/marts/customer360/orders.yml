@@ -30,14 +30,14 @@ models:
             case when (${is_drink_order} = true)
               and (${customers.customer_type} = 'returning')
                 then (1)
-            end ;;
+            end
           hidden: true
         pc_drink_orders_for_returning_customers_denominator:
           type: sum
           sql: |
             case when (${customers.customer_type} = 'returning')
               then (1)
-            end ;;
+            end
           hidden: true
         pc_drink_orders_for_returning_customers:
           type: number
