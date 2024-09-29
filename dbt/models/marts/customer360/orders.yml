@@ -2,10 +2,49 @@ models:
   - name: orders
     description: Order overview data mart, offering key details for each order including if it's a customer's first order and a food vs. drink item breakdown. One row per order.
     meta:
+      joins:
+        - join: customers
+          sql_on: orders.customer_id = customers.customer_id
       metrics:
-        orders:
+        order_total_metric: # Note that name had to be changed to avoid conflict with the column name
+          label: Order Total
           type: sum
-          sql: 1
+          sql: order_total
+        food_orders:
+          label: Food Orders
+          type: sum
+          sql: |
+            case when (${is_food_order} = true)
+              then (1)
+            end
+        large_orders:
+          label: Large Orders
+          type: sum
+          sql: |
+            case when (${is_large_order} = true)
+              then (1)
+            end
+        pc_drink_orders_for_returning_customers_numerator:          
+          type: sum
+          sql: |
+            case when (${is_drink_order} = true)
+              and (${customers.customer_type} = 'returning')
+                then (1)
+            end ;;
+          hidden: true
+        pc_drink_orders_for_returning_customers_denominator:
+          type: sum
+          sql: |
+            case when (${customers.customer_type} = 'returning')
+              then (1)
+            end ;;
+          hidden: true
+        pc_drink_orders_for_returning_customers:
+          type: number
+          label: "Drink orders for returning customers (%)"
+          description: "Percentage of orders which are drink orders."
+          sql: ${pc_drink_orders_for_returning_customers_numerator} / nullif(${pc_drink_orders_for_returning_customers_denominator}, 0)
+
 
     columns:
       - name: order_id
@@ -13,6 +52,10 @@ models:
         data_tests:
           - not_null
           - unique
+        meta:
+          additional_dimensions:
+            is_large_order:
+              sql: order_total > 20
       - name: customer_id
         description: The foreign key relating to the customer who placed the order.
         data_tests:
@@ -25,11 +68,6 @@ models:
         description: The discount code applied to the order.
       - name: order_total
         description: The total amount of the order in USD including tax.
-        meta:
-          metrics: 
-            order_total_total:
-              label: Order Total
-              type: sum
       - name: ordered_at
         description: The timestamp the order was placed at.
       - name: count_food_items
