@@ -7,6 +7,7 @@ models:
         data_tests:
           - not_null
           - unique
+      - name: location_name
 
 semantic_models:
   - name: locations
