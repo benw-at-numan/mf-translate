@@ -12,20 +12,20 @@ models:
       metrics:
         delivery_count:
           type: count
-          sql: delivery_id
+          sql: ${TABLE}.delivery_id
         pc_deliveries_with_5_stars_numerator:
           type: count
           sql: |
             case when (${delivery_rating} = 5)
                and (coalesce(${orders.discount_code}, 'NO_DISCOUNT') != 'STAFF_ORDER')
-                then (delivery_id)
+                then (${TABLE}.delivery_id)
             end 
           hidden: true
         pc_deliveries_with_5_stars_denominator:
           type: count
           sql: |
             case when (coalesce(${orders.discount_code}, 'NO_DISCOUNT') != 'STAFF_ORDER')
-              then (delivery_id)
+              then (${TABLE}.delivery_id)
             end
           hidden: true
         pc_deliveries_with_5_stars:
