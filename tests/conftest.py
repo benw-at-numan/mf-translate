@@ -2,6 +2,7 @@ import pytest
 from dotenv import load_dotenv
 import looker_sdk
 import subprocess
+from pathlib import Path
 
 
 @pytest.fixture(scope="session")
@@ -20,3 +21,8 @@ def setup_dbt():
 def setup_looker_sdk():
     sdk = looker_sdk.init40("tests/integration/secrets/looker.ini")
     yield sdk
+
+
+@pytest.fixture
+def test_dir(request):
+    return Path(request.fspath).parent.resolve()

@@ -213,3 +213,72 @@ def metric_to_ldsh_measures(metric, from_model):
 
         logging.info(f"Translated ratio metric {ldsh_ratio['name']}.")
         return [ldsh_numerator, ldsh_denominator, ldsh_ratio]
+
+
+
+# ------------------------------------------------------------------------------------------------------------
+# The following code is used to merge DBT schema.yml files. This is a helpful utility for working with Lightdash
+# as lightdash dimension & metrics have to reside alongside existing DBT model definitions - DBT complains if
+# the translated dimension/metrics definitions and the existing model definitions are stored in separate files.
+# The solution is to merge the generated output with the existing .yml files using the merge_dbt_yaml() function below.
+
+from ruamel.yaml import YAML
+import copy
+
+def merge_dicts(d1, d2):
+    for key, value in d2.items():
+        if key in d1:
+            if isinstance(d1[key], dict) and isinstance(value, dict):
+                # Both are dicts, so merge them recursively
+                merge_dicts(d1[key], value)
+            elif isinstance(d1[key], list) and isinstance(value, list):
+                # Both are lists, so merge them intelligently
+                d1[key] = merge_lists(d1[key], value)
+            else:
+                # Overwrite scalar values from d2
+                d1[key] = value
+        else:
+            # Key doesn't exist in d1, so add it
+            d1[key] = value
+
+def merge_lists(l1, l2):
+    # Check if list items are dicts with 'name' key
+    if all(isinstance(item, dict) and 'name' in item for item in l1 + l2):
+        # Merge list items based on 'name' key
+        merged_list = copy.deepcopy(l1)
+        names_in_l1 = {item['name']: item for item in merged_list}
+        for item in l2:
+            name = item['name']
+            if name in names_in_l1:
+                merge_dicts(names_in_l1[name], item)
+            else:
+                merged_list.append(item)
+        return merged_list
+    else:
+        # If items are not dicts with 'name', combine lists without duplicates
+        return l1 + [item for item in l2 if item not in l1]
+
+def merge_dbt_yaml(source_yaml_str, update_yaml_str):
+    """
+    Merges two YAML strings representing dbt models. This works like a left join in SQL in that data from the source
+    is only overwritten by data from the update if the key exists in both. Keys are matched in dictionaries by key and
+    in lists by the 'name' attribute of the list element.
+
+    Parameters:
+        source_yaml_str (str): Original YAML string to be updated.
+        update_yaml_str (str): YAML string containing data to merge into the source data.
+    """
+
+    yaml = YAML()
+    yaml.preserve_quotes = True
+    yaml.indent(mapping=2, sequence=4, offset=2)
+    yaml.width = 4096  # Prevent line wrapping
+
+    source_yaml = yaml.load(source_yaml_str)
+    update_yaml = yaml.load(update_yaml_str)
+
+    # Deep copy the source data and merge the update data into it
+    result_data = copy.deepcopy(source_yaml)
+    merge_dicts(result_data, update_yaml)
+
+    return result_data
