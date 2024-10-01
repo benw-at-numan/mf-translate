@@ -727,7 +727,7 @@ def test_ratio_metric_with_non_simple_numerator(monkeypatch, caplog):
 
     assert any(record.levelname == 'WARNING'
                 and "non-simple denominator metrics are not supported." in record.message for record in caplog.records)
-    
+
     assert len(lkml_measures) == 0
 
 
@@ -818,5 +818,5 @@ def test_ratio_metric_with_numerator_and_denominator_from_different_models(monke
 
     assert any(record.levelname == 'WARNING'
                 and "numerator and denominator from different models not supported." in record.message for record in caplog.records)
-    
+
     assert len(lkml_measures) == 0

@@ -156,3 +156,60 @@ def metric_to_ldsh_measures(metric, from_model):
 
         logging.info(f"Translated simple metric {ldsh_measure['name']}.")
         return [ldsh_measure]
+
+    elif metric["type"] == "ratio":
+
+        metric_where_filters = (metric.get("filter") or  {}).get("where_filters", [])
+        metrics_dict = {m["name"]: m for m in METRICS}
+
+        # NUMERATOR
+        numerator_params = metric["type_params"]["numerator"]
+        numerator_where_filters = (numerator_params.get("filter") or  {}).get("where_filters", [])
+        numerator_metric = metrics_dict[numerator_params["name"]]
+
+        if numerator_metric.get("type") != "simple":
+            logging.warning(f"Skipped ratio metric {metric['name']} - non-simple numerator metrics are not supported.")
+            return []
+
+        ldsh_numerator = simple_metric_to_ldsh_measure(metric=numerator_metric,
+                                                       from_model=from_model,
+                                                       additional_where_filters=numerator_where_filters + metric_where_filters)
+        ldsh_numerator["name"] = f"{metric['name']}_numerator"
+        ldsh_numerator["hidden"] = 'yes'
+
+        # DENOMINATOR
+        denominator_params = metric["type_params"]["denominator"]
+        denominator_where_filters = (denominator_params.get("filter") or  {}).get("where_filters", [])
+        denominator_metric = metrics_dict[denominator_params["name"]]
+
+        if denominator_metric.get("type") != "simple":
+            logging.warning(f"Skipped ratio metric {metric['name']} - non-simple denominator metrics are not supported.")
+            return []
+
+        ldsh_denominator = simple_metric_to_ldsh_measure(metric=denominator_metric,
+                                                         from_model=from_model,
+                                                         additional_where_filters=denominator_where_filters + metric_where_filters)
+        ldsh_denominator["name"] = f"{metric['name']}_denominator"
+        ldsh_denominator["hidden"] = 'yes'
+
+        # RATIO
+        ldsh_ratio = {}
+        ldsh_ratio["name"] = metric["name"]
+        ldsh_ratio["type"] = "number"
+
+        if metric.get("label"):
+            ldsh_ratio["label"] = metric["label"]
+
+        if metric.get("description"):
+            ldsh_ratio["description"] = metric["description"]
+
+        ldsh_ratio["sql"] = f"${{{ldsh_numerator['name']}}} / nullif(${{{ldsh_denominator['name']}}}, 0)"
+
+        if ldsh_numerator["parent_view"] != ldsh_denominator["parent_view"]:
+            logging.warning(f"Skipped ratio metric {ldsh_ratio['name']} - numerator and denominator from different models not supported.")
+            return []
+
+        ldsh_ratio["parent_view"] = ldsh_numerator["parent_view"]
+
+        logging.info(f"Translated ratio metric {ldsh_ratio['name']}.")
+        return [ldsh_numerator, ldsh_denominator, ldsh_ratio]
