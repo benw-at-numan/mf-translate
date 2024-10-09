@@ -102,5 +102,5 @@ metrics:
         filter: |
           {{ Dimension('delivery_id__delivery_rating') }} = 5
       denominator: delivery_count
-    # filter: |
-      # coalesce({{ Dimension('order_id__discount_code') }}, 'NO_DISCOUNT') != 'STAFF_ORDER'
+    filter: |
+      coalesce({{ Dimension('order_id__discount_code') }}, 'NO_DISCOUNT') != 'STAFF_ORDER'
