@@ -7,7 +7,7 @@ Next
 
 Later
 - CLI command
-    mf-compare --metrics pc_deliveries_with_5_stars \
-               --group-by delivery_person_id__full_name \
-               --order-by -pc_deliveries_with_5_stars \
-               --to-looker
+    mf-compare-query --metrics pc_deliveries_with_5_stars \
+                     --group-by delivery_person_id__full_name \
+                     --order-by -pc_deliveries_with_5_stars \
+        --to-looker
