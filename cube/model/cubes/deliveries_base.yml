@@ -1,0 +1,46 @@
+cubes:
+- name: deliveries_base
+  sql_table: '`fresh-iridium-428713-j5`.`jaffle_shop`.`deliveries`'
+  dimensions:
+  - name: delivery_id
+    primary_key: true
+    type: string
+    public: false
+    sql: '{CUBE}.delivery_id'
+  - name: order_id
+    type: string
+    public: false
+    sql: '{CUBE}.order_id'
+  - name: delivery_person_id
+    type: string
+    public: false
+    sql: '{CUBE}.delivery_person_id'
+  - name: delivered_at
+    sql: TIMESTAMP({CUBE}.delivered_at, 'UTC')
+    type: time
+  - name: delivery_rating
+    sql: '{CUBE}.delivery_rating'
+    type: string
+  measures:
+  - name: pc_deliveries_with_5_stars_numerator
+    type: count
+    sql: '{CUBE}.delivery_id'
+    filters:
+    - sql: '{delivery_rating} = 5'
+    - sql: coalesce({orders.discount_code}, 'NO_DISCOUNT') != 'STAFF_ORDER'
+    public: false
+  - name: pc_deliveries_with_5_stars_denominator
+    type: count
+    sql: '{CUBE}.delivery_id'
+    filters:
+    - sql: coalesce({orders.discount_code}, 'NO_DISCOUNT') != 'STAFF_ORDER'
+    public: false
+  - name: pc_deliveries_with_5_stars
+    type: number
+    title: Deliveries with 5 stars (%)
+    description: Percentage of deliveries that received a 5-star rating.
+    sql: '{pc_deliveries_with_5_stars_numerator} / nullif({pc_deliveries_with_5_stars_denominator},
+      0)'
+  - name: delivery_count
+    type: count
+    sql: '{CUBE}.delivery_id'

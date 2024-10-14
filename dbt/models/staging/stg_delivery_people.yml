@@ -1,0 +1,9 @@
+models:
+  - name: stg_delivery_people
+    description: List of delivery people.
+    columns:
+      - name: delivery_person_id
+        description: The unique key for each delivery person.
+        data_tests:
+          - not_null
+          - unique

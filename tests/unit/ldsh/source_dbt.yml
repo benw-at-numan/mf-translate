@@ -1,0 +1,85 @@
+models:
+  - name: deliveries
+    description: Delivery data mart. This table is at the delivery grain with one row per delivery.
+    meta:
+      joins:
+        - join: orders
+          sql_on: deliveries.order_id = orders.order_id
+        - join: customers
+          sql_on: orders.customer_id = customers.customer_id
+        - join: delivery_people
+          sql_on: deliveries.delivery_person_id = delivery_people.delivery_person_id
+      metrics:
+        delivery_count:
+          type: count
+          sql: ${TABLE}.delivery_id
+          description: The count of deliveries.
+    columns:
+      - name: delivery_id
+        description: The unique key of the deliveries mart.
+        data_tests:
+          - not_null
+          - unique
+
+      - name: order_id
+        description: The foreign key relating to the order that was delivered.
+        data_tests:
+          - relationships:
+              to: ref('orders')
+              field: order_id
+
+      - name: delivered_at
+        description: The timestamp the delivery was completed at.
+
+      - name: delivery_person_id
+        description: The foreign key relating to the delivery person who delivered the order.
+        data_tests:
+          - relationships:
+              to: ref('stg_delivery_people')
+              field: delivery_person_id
+
+      - name: delivery_rating
+        description: The rating the customer gave the delivery person.
+
+semantic_models:
+  - name: deliveries
+    defaults:
+      agg_time_dimension: delivered_at
+    description: |
+      Delivery fact table. This table is at the delivery grain with one row per delivery.
+    model: ref('deliveries')
+    entities:
+      - name: delivery_id
+        type: primary
+      - name: order_id
+        type: foreign
+      - name: delivery_person_id
+        type: foreign
+    dimensions:
+      - name: delivered_at
+        type: time
+        type_params:
+          time_granularity: day
+      - name: delivery_rating
+        type: categorical
+
+    measures:
+      - name: delivery_count
+        agg: count
+        expr: delivery_id
+        create_metric: true
+
+metrics:
+  - name: pc_deliveries_with_5_stars
+    label: "Deliveries with 5 stars (%)"
+    description: "Percentage of deliveries that received a 5-star rating."
+    type: ratio
+    type_params:
+      numerator:
+        name: delivery_count
+        alias: five_star_deliveries_count
+        filter: |
+          {{ Dimension('delivery_id__delivery_rating') }} = 5
+      denominator: delivery_count
+    filter: |
+      coalesce({{ Dimension('order_id__discount_code') }}, 'NO_DISCOUNT') != 'STAFF_ORDER'

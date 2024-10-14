@@ -1,0 +1,24 @@
+models:
+  - name: delivery_people
+    description: List of delivery people.
+    columns:
+      - name: delivery_person_id
+        description: The unique key of the delivery person.
+        data_tests:
+          - not_null
+          - unique
+
+      - name: full_name
+        description: The full name of the delivery person.
+
+semantic_models:
+  - name: delivery_people
+    description: |
+      Delivery people dimension table.
+    model: ref('delivery_people')
+    entities:
+      - name: delivery_person_id
+        type: primary
+    dimensions:
+      - name: full_name
+        type: categorical

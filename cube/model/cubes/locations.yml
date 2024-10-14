@@ -1,0 +1,16 @@
+cubes:
+  - name: locations
+    sql_table: jaffle_shop.stg_locations
+
+    joins: []
+
+    dimensions:
+
+      - name: location_id
+        type: string
+        primary_key: true
+        sql: "{CUBE}.location_id"
+
+      - name: location_name
+        type: string
+        sql: "{CUBE}.location_name"

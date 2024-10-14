@@ -1,0 +1,6 @@
+models:
+  - name: stg_deliveries
+    description: Delivery data with basic cleaning and transformation applied, one row per delivery.
+    columns:
+      - name: delivery_id
+        description: The unique key of the deliveries mart.

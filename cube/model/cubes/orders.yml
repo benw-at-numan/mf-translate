@@ -1,0 +1,12 @@
+cubes:
+  - name: orders
+    extends: orders_base
+
+    joins:
+      - name: customers
+        sql: "{CUBE}.customer_id = {customers.customer_id}"
+        relationship: many_to_one
+
+      - name: locations
+        sql: "{CUBE}.location_id = {locations.location_id}"
+        relationship: many_to_one

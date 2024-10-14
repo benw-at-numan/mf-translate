@@ -1,0 +1,16 @@
+cubes:
+  - name: deliveries
+    extends: deliveries_base
+
+    joins:
+      - name: delivery_people
+        sql: "{CUBE}.delivery_person_id = {delivery_people.delivery_person_id}"
+        relationship: many_to_one
+
+      - name: orders
+        sql: "{CUBE}.order_id = {orders.order_id}"
+        relationship: one_to_one
+
+      - name: customers
+        sql: "{CUBE}.customer_id = {customers.customer_id}"
+        relationship: many_to_one
