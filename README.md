@@ -4,18 +4,18 @@
 
 ## Quickstart
 
-### Install
+### 1. Install
 ```sh
 pip install git+https://github.com/benw-at-birdie/mf-translate.git
 ```
 
-### Translate a model
+### 2. Translate a model
 Translate all the dimensions and metrics from the `deliveries` semantic model.
 ```bash
 mf-translate mf-translate --model deliveries --to-looker > looker/deliveries_base.view.lkml
 ```
 
-### Compare semantic layer queries
+### 3. Compare semantic layer queries
 Setup Looker credentials:
 ```bash
 export LOOKERSDK_BASE_URL="https://your.looker.instance:19999"
