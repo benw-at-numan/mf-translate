@@ -1,6 +1,6 @@
 # mf-translate
 
-`mf-translate` converts MetricFlow models and metrics to alternative semantic layers. The idea is to lighten the load of parallel running of two semantic layers by enabling automated synchronisation of definitions. The repo also includes `mf-compare-query` for checking that equivalent queries for different semantic layers return the same result.
+`mf-translate` converts MetricFlow models and metrics to alternative semantic layers. The idea is to lighten the load of parallel running of two semantic layers by enabling automated synchronisation of definitions. The repo also includes `mf-compare-query` for checking that equivalent queries against different semantic layers return the same result.
 
 ## Quickstart
 
