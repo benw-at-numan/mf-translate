@@ -48,7 +48,7 @@ def query_metricflow(metrics, group_by=None, order_by=None, start_time=None, end
 
 def query_looker(lkr_sdk, explore, fields, sorts=None):
 
-    lkr_query = lkr_models.WriteQuery(model='dbt_slt', view=explore, fields=fields, sorts=sorts, limit=-1)
+    lkr_query = lkr_models.WriteQuery(model='jaffle_shop', view=explore, fields=fields, sorts=sorts, limit=-1)
     response = lkr_sdk.run_inline_query("csv", lkr_query)
     query_results = pd.read_csv(StringIO(response))
 
