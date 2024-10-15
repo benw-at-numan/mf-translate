@@ -23,10 +23,11 @@ export LOOKERSDK_CLIENT_ID="your_client_id"
 export LOOKERSDK_CLIENT_SECRET="your_client_secret"
 ```
 
-Set target Looker project:
+Set target Looker model:
 ```bash
-export MF_TRANSLATE_LOOKER_PROJECT="jaffle_shop"
+export MF_TRANSLATE_LOOKER_MODEL="jaffle_shop"
 ```
+Note that the model name is case sensitive.
 
 Compare a MetricFlow query results to the equivalent Looker query:
 ```bash

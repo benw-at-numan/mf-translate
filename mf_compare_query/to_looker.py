@@ -82,7 +82,7 @@ def qualified_dim_to_looker_dim(qualified_dim):
     return model_for_entity["name"] + "." + dim
 
 
-def query_to_looker_query(metrics, group_by=None, order_by=None):
+def query_to_looker_query(metrics, group_by=None, order_by=None, explore=None):
     """
     Converts a MetricFlow query to a Looker query.
 
@@ -95,12 +95,15 @@ def query_to_looker_query(metrics, group_by=None, order_by=None):
     looker_sdk.models40.WriteQuery: The Looker query.
     """
 
-    if not os.getenv("MF_TRANSLATE_LOOKER_PROJECT"):
-        raise ValueError("MF_TRANSLATE_LOOKER_PROJECT environment variable must be set.")
+    if not os.getenv("MF_TRANSLATE_LOOKER_MODEL"):
+        raise ValueError("MF_TRANSLATE_LOOKER_MODEL environment variable must be set.")
 
-    explore = parent_model_for_metrics(metrics)
+    parent_model = parent_model_for_metrics(metrics)
 
-    lkr_fields = [explore + "." + metric for metric in metrics]
+    if not explore:
+        explore = parent_model
+
+    lkr_fields = [parent_model + "." + metric for metric in metrics]
     if group_by:
         for field in group_by:
             prefix = '-' if field[0] == '-' else ''
@@ -114,20 +117,20 @@ def query_to_looker_query(metrics, group_by=None, order_by=None):
             prefix = '-' if field[0] == '-' else ''
             field = field.replace('-', '')
             if field in metric_names:                       
-                lkr_sorts.append(prefix + explore + "." + field)
+                lkr_sorts.append(prefix + parent_model + "." + field)
             else:
                 lkr_sorts.append(prefix + qualified_dim_to_looker_dim(field))
     else:
         lkr_sorts = None
 
-    return looker_sdk.models40.WriteQuery(model=os.getenv("MF_TRANSLATE_LOOKER_PROJECT"), 
+    return looker_sdk.models40.WriteQuery(model=os.getenv("MF_TRANSLATE_LOOKER_MODEL"), 
                                           view=explore, 
                                           fields=lkr_fields, 
                                           sorts=lkr_sorts, 
                                           limit=-1)
 
 
-def query_looker(metrics, group_by=None, order_by=None):
+def query_looker(metrics, group_by=None, order_by=None, explore=None):
     """
     Queries Looker for the specified metrics, group by and order by fields.
 
@@ -140,7 +143,9 @@ def query_looker(metrics, group_by=None, order_by=None):
     pandas.DataFrame: The query results.
     """
 
-    lkr_query = query_to_looker_query(metrics, group_by, order_by)
+    lkr_query = query_to_looker_query(metrics, group_by, order_by, explore)
+    logging.info(f"Querying Looker explore: {lkr_query.view}, fields: {', '.join(lkr_query.fields)}")
+    logging.debug(f"Looker query: {lkr_query}")
 
     sdk = looker_sdk.init40()
     response = sdk.run_inline_query("csv", lkr_query)
@@ -168,6 +173,7 @@ def query_metricflow(metrics, group_by=None, order_by=None, start_time=None, end
 
     # Define the dbt command
     metrics_list = ','.join(metrics)
+    logging.info(f"Querying MetricFlow metrics: {metrics_list}")
     mf_command = f"mf query --metrics {metrics_list} --csv logs/mf_compare_query_results.csv"
 
     if group_by:
