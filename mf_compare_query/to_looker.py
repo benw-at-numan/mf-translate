@@ -6,6 +6,7 @@ from tabulate import tabulate
 import subprocess
 
 import looker_sdk
+from looker_sdk import models40
 looker_logger = logging.getLogger('looker_sdk')
 looker_logger.setLevel(logging.WARNING)
 from io import StringIO
@@ -60,26 +61,32 @@ def parent_model_for_metrics(metrics):
     return parent_model
 
 
-def qualified_dim_to_looker_dim(qualified_dim):
+def field_to_looker_dim(field):
     """
-    Converts a qualified dimension name to a Looker dimension name. For example 'order_id__order_status' becomes 'orders.order_status'.
+    Converts a MetricFlow field (dimension or entity) to a Looker dimension. For example 'order_id__order_status' becomes 'orders.order_status', 'order_id' becomes 'orders.order_id'.
 
     Parameters:
-    qualified_dim (str): The qualified dimension name.
+    field (str): The MetricFlow field name.
+
+    Returns:
+    str: The fully qualified Looker dimension name.
     """
 
-    entity_name = qualified_dim.split("__")[0]
-    dim = qualified_dim.split("__")[1]
-        
-    model_for_entity = None
+    field_parts = field.split("__")
+    entity_name = field_parts[0]
 
+    model_for_entity = None
     for model in SEMANTIC_MODELS:
         for entity in model["entities"]:
             if entity["name"] == entity_name and entity["type"] == 'primary':
                 model_for_entity = model
                 break
 
-    return model_for_entity["name"] + "." + dim
+    if len(field_parts) > 1:
+        dim = field_parts[1]
+        return model_for_entity["name"] + "." + dim
+    else:
+        return model_for_entity["name"] + "." + entity_name
 
 
 def query_to_looker_query(metrics, group_by=None, order_by=None, explore=None):
@@ -108,7 +115,7 @@ def query_to_looker_query(metrics, group_by=None, order_by=None, explore=None):
         for field in group_by:
             prefix = '-' if field[0] == '-' else ''
             field = field.replace('-', '')
-            lkr_fields.append(prefix + qualified_dim_to_looker_dim(field))
+            lkr_fields.append(prefix + field_to_looker_dim(field))
 
     if order_by:
         lkr_sorts = []
@@ -119,7 +126,7 @@ def query_to_looker_query(metrics, group_by=None, order_by=None, explore=None):
             if field in metric_names:                       
                 lkr_sorts.append(prefix + parent_model + "." + field)
             else:
-                lkr_sorts.append(prefix + qualified_dim_to_looker_dim(field))
+                lkr_sorts.append(prefix + field_to_looker_dim(field))
     else:
         lkr_sorts = None
 
@@ -130,7 +137,7 @@ def query_to_looker_query(metrics, group_by=None, order_by=None, explore=None):
                                           limit=-1)
 
 
-def query_looker(metrics, group_by=None, order_by=None, explore=None):
+def query_looker(metrics, group_by=None, order_by=None, explore=None, dev_branch=None):
     """
     Queries Looker for the specified metrics, group by and order by fields.
 
@@ -148,6 +155,15 @@ def query_looker(metrics, group_by=None, order_by=None, explore=None):
     logging.debug(f"Looker query: {lkr_query}")
 
     sdk = looker_sdk.init40()
+
+    if dev_branch:
+        looker_project = os.getenv("MF_TRANSLATE_LOOKER_PROJECT")
+        if not looker_project:
+            raise ValueError("MF_TRANSLATE_LOOKER_PROJECT environment variable must be set when using `--to-looker-dev-branch` option.")
+        sdk.update_session(models40.WriteApiSession(workspace_id='dev'))
+        sdk.update_git_branch(project_id=looker_project, body=models40.WriteGitBranch(name=dev_branch))
+        
+
     response = sdk.run_inline_query("csv", lkr_query)
 
     query_results_df = pd.read_csv(StringIO(response))

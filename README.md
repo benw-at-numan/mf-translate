@@ -33,7 +33,7 @@ Compare a MetricFlow query results to the equivalent Looker query:
 ```bash
 mf-compare-query --metrics deliveries_count --group-by delivery_person_id__full_name --to-looker
 ```
-Note that the above requires the LookML translations to have been deployed to production.
+See the `mf-compare-query` [readme](mf_compare_query/README.md) for more information.
 
 ## Supported Semantic Layers
 Currently only Looker is supported as a translation destination but there is potential to expand support to Cube.dev and Lightdash. Also, `mf-translate` only supports one-way translation, it is not possible to translate a LookML model back to MetricFlow for example. Below are the metric types which can currently be translated: -
