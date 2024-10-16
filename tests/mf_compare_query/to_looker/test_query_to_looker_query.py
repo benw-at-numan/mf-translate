@@ -29,7 +29,7 @@ def test_single_metric(monkeypatch):
     ]
     monkeypatch.setattr(to_looker, 'METRICS', metrics)
 
-    monkeypatch.setenv("MF_TRANSLATE_LOOKER_PROJECT", "looker_model")
+    monkeypatch.setenv("MF_TRANSLATE_LOOKER_MODEL", "looker_model")
     lkr_query = to_looker.query_to_looker_query(metrics=['order_total'])
 
     assert lkr_query.model == 'looker_model'
@@ -77,7 +77,7 @@ def test_single_metric_with_group_and_order_by(monkeypatch):
     ]
     monkeypatch.setattr(to_looker, 'METRICS', metrics)
 
-    monkeypatch.setenv("MF_TRANSLATE_LOOKER_PROJECT", "looker_model")
+    monkeypatch.setenv("MF_TRANSLATE_LOOKER_MODEL", "looker_model")
     lkr_query = to_looker.query_to_looker_query(metrics=['order_total'], group_by=['location_id__location_name'], order_by=['-location_id__location_name'])
 
     assert lkr_query.model == 'looker_model'
@@ -125,7 +125,7 @@ def test_single_metric_with_group_and_order_by_metric(monkeypatch):
     ]
     monkeypatch.setattr(to_looker, 'METRICS', metrics)
 
-    monkeypatch.setenv("MF_TRANSLATE_LOOKER_PROJECT", "looker_model")
+    monkeypatch.setenv("MF_TRANSLATE_LOOKER_MODEL", "looker_model")
     lkr_query = to_looker.query_to_looker_query(metrics=['order_total'], group_by=['location_id__location_name'], order_by=['-order_total'])
 
     assert lkr_query.model == 'looker_model'

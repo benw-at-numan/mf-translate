@@ -23,16 +23,17 @@ export LOOKERSDK_CLIENT_ID="your_client_id"
 export LOOKERSDK_CLIENT_SECRET="your_client_secret"
 ```
 
-Set target Looker project:
+Set target Looker model:
 ```bash
-export MF_TRANSLATE_LOOKER_PROJECT="jaffle_shop"
+export MF_TRANSLATE_LOOKER_MODEL="jaffle_shop"
 ```
+Note that the model name is case sensitive.
 
 Compare a MetricFlow query results to the equivalent Looker query:
 ```bash
 mf-compare-query --metrics deliveries_count --group-by delivery_person_id__full_name --to-looker
 ```
-Note that the above requires the LookML translations to have been deployed to production.
+See the `mf-compare-query` [readme](mf_compare_query/README.md) for more information.
 
 ## Supported Semantic Layers
 Currently only Looker is supported as a translation destination but there is potential to expand support to Cube.dev and Lightdash. Also, `mf-translate` only supports one-way translation, it is not possible to translate a LookML model back to MetricFlow for example. Below are the metric types which can currently be translated: -

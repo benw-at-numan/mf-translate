@@ -20,19 +20,26 @@ def main():
     parser = argparse.ArgumentParser(description='Asserts if the results for the specified MetricFlow query match the results from an equivalent Looker/Cube/Lightdash query.')
 
     parser.add_argument('--metrics', type=parse_csv_str, required=True, metavar='SEQUENCE',
-                        help='Comma-separated list of metrics, for example, --metrics bookings,messages')
+                        help='Comma-separated list of metrics, for example, --metrics bookings,messages. Note that the listed metrics should be derived from measures in the same semantic model.')
     parser.add_argument('--group-by', type=parse_csv_str, required=False, metavar='SEQUENCE',
-                        help='List of dimensions/entities to group by, e.g. --group-by ds,org')
+                        help='List of dimensions/entities to group by, e.g. --group-by customer_name,region.')
     parser.add_argument('--order-by', type=parse_csv_str, required=False, metavar='SEQUENCE',
-                        help='List of dimensions/entities to order by, e.g. --order-by ds,-org')
+                        help='List of dimensions/entities to order by, e.g. --order-by customer_name,-region.')
     parser.add_argument('--to-looker', action='store_true',
                         help='Compare the query results to Looker.')
+    parser.add_argument('--to-looker-explore', type=str, required=False,
+                        help='Compare the query results to the specified Looker Explore (rather than inferring the Explore from the --metrics input).')
+    parser.add_argument('--to-looker-dev-branch', type=str, required=False,
+                        help='The development git branch to use when querying Looker. If not specified, the production environment will be used. Note that MF_TRANSLATE_LOOKER_PROJECT environment variable must be set.')
+    parser.add_argument('--log-level', type=str, required=False, default='INFO',
+                        help='Set the logging level, options are DEBUG, INFO, WARNING, ERROR, CRITICAL.')
     args = parser.parse_args()
 
-    if not args.to_looker:
+    if not (args.to_looker or args.to_looker_explore or args.to_looker_dev_branch):
         raise ValueError("Only comparisons to Looker are supported at the moment.")
-
-    logging.info(f"Comparing MetricFlow query results to Looker...")
+    
+    if args.log_level:
+        logging.getLogger().setLevel(args.log_level)
 
 
     # PARSE DBT PROJECT
@@ -50,13 +57,14 @@ def main():
         raise ValueError(f"The file {f'target/semantic_manifest.json'} is not a valid JSON file.")
 
     to_looker.set_semantic_manifest(semantic_manifest)
-    logging.info(f"Parsed dbt project.")
+    logging.debug(f"Parsed dbt project.")
 
 
     # QUERY METRICFLOW AND LOOKER
     mf_results = to_looker.query_metricflow(metrics=args.metrics, group_by=args.group_by, order_by=args.order_by)
     logging.info(f"MetricFlow query returned {mf_results.shape[0]} rows.")
-    lkr_results = to_looker.query_looker(metrics=args.metrics, group_by=args.group_by, order_by=args.order_by)
+    lkr_results = to_looker.query_looker(metrics=args.metrics, group_by=args.group_by, order_by=args.order_by, 
+                                         explore=args.to_looker_explore, dev_branch=args.to_looker_dev_branch)
     logging.info(f"Looker query returned {lkr_results.shape[0]} rows.")
 
     mf_results.columns = lkr_results.columns # MF does not return column names so overwrite them with Looker's.
