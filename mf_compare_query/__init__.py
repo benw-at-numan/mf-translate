@@ -25,8 +25,6 @@ def main():
                         help='List of dimensions/entities to group by, e.g. --group-by customer_name,region.')
     parser.add_argument('--order-by', type=parse_csv_str, required=False, metavar='SEQUENCE',
                         help='List of dimensions/entities to order by, e.g. --order-by customer_name,-region.')
-    parser.add_argument('--to-looker', action='store_true',
-                        help='Compare the query results to Looker.')
     parser.add_argument('--to-looker-explore', type=str, required=False,
                         help='Compare the query results to the specified Looker Explore (rather than inferring the Explore from the --metrics input).')
     parser.add_argument('--to-looker-dev-branch', type=str, required=False,
@@ -35,7 +33,7 @@ def main():
                         help='Set the logging level, options are DEBUG, INFO, WARNING, ERROR, CRITICAL.')
     args = parser.parse_args()
 
-    if not (args.to_looker or args.to_looker_explore or args.to_looker_dev_branch):
+    if not (args.to_looker_explore):
         raise ValueError("Only comparisons to Looker are supported at the moment.")
     
     if args.log_level:

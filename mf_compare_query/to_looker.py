@@ -28,14 +28,17 @@ def set_semantic_manifest(metricflow_semantic_manifest):
     METRICS = metricflow_semantic_manifest.get('metrics', [])
 
 
-def parent_model_for_metrics(metrics):
+def metric_to_looker_measure(metric_name):
     """
-    Returns the parent semantic model for a given list of metrics. If more than one model is detected, an error is raised.
+    Converts a MetricFlow metric to a Looker measure. For example 'order_total' becomes 'orders.order_total'.
 
     Parameters:
-    metrics (list): A list of metric names.
+    metric (dict): The MetricFlow metric.
+
+    Returns:
+    str: The fully qualified Looker measure name.
     """
-   
+
     parent_model = None
 
     metrics_dict = {metric['name']: metric for metric in METRICS}
@@ -45,20 +48,19 @@ def parent_model_for_metrics(metrics):
         for measure in model["measures"]:
             measures_dict[measure["name"]] = measure | {'parent_model': model['name']}
 
-    for metric_name in metrics:
-      
-        metric = metrics_dict.get(metric_name)
 
-        for input_measure in metric["type_params"]["input_measures"]:
-            measure = measures_dict.get(input_measure["name"])
-            new_parent_model = measure["parent_model"]
-            if parent_model:
-                if parent_model != new_parent_model:
-                    raise ValueError(f"All query metrics must depend on a single semantic model. Multiple models detected: {parent_model} and {new_parent_model}")
-                
-            parent_model = new_parent_model
+    metric = metrics_dict.get(metric_name)
 
-    return parent_model
+    for input_measure in metric["type_params"]["input_measures"]:
+        measure = measures_dict.get(input_measure["name"])
+        new_parent_model = measure["parent_model"]
+        if parent_model:
+            if parent_model != new_parent_model:
+                raise ValueError(f"All query metrics must depend on a single semantic model. Multiple models detected: {parent_model} and {new_parent_model}")
+
+        parent_model = new_parent_model
+
+    return parent_model + "." + metric["name"]
 
 
 def field_to_looker_dim(field):
@@ -89,7 +91,7 @@ def field_to_looker_dim(field):
         return model_for_entity["name"] + "." + entity_name
 
 
-def query_to_looker_query(metrics, group_by=None, order_by=None, explore=None):
+def query_to_looker_query(explore, metrics, group_by=None, order_by=None):
     """
     Converts a MetricFlow query to a Looker query.
 
@@ -105,12 +107,8 @@ def query_to_looker_query(metrics, group_by=None, order_by=None, explore=None):
     if not os.getenv("MF_TRANSLATE_LOOKER_MODEL"):
         raise ValueError("MF_TRANSLATE_LOOKER_MODEL environment variable must be set.")
 
-    parent_model = parent_model_for_metrics(metrics)
+    lkr_fields = [metric_to_looker_measure(metric) for metric in metrics]
 
-    if not explore:
-        explore = parent_model
-
-    lkr_fields = [parent_model + "." + metric for metric in metrics]
     if group_by:
         for field in group_by:
             prefix = '-' if field[0] == '-' else ''
@@ -123,21 +121,21 @@ def query_to_looker_query(metrics, group_by=None, order_by=None, explore=None):
         for field in order_by:
             prefix = '-' if field[0] == '-' else ''
             field = field.replace('-', '')
-            if field in metric_names:                       
-                lkr_sorts.append(prefix + parent_model + "." + field)
+            if field in metric_names:
+                lkr_sorts.append(prefix + metric_to_looker_measure(field))
             else:
                 lkr_sorts.append(prefix + field_to_looker_dim(field))
     else:
         lkr_sorts = None
 
-    return looker_sdk.models40.WriteQuery(model=os.getenv("MF_TRANSLATE_LOOKER_MODEL"), 
-                                          view=explore, 
-                                          fields=lkr_fields, 
-                                          sorts=lkr_sorts, 
+    return looker_sdk.models40.WriteQuery(model=os.getenv("MF_TRANSLATE_LOOKER_MODEL"),
+                                          view=explore,
+                                          fields=lkr_fields,
+                                          sorts=lkr_sorts,
                                           limit=-1)
 
 
-def query_looker(metrics, group_by=None, order_by=None, explore=None, dev_branch=None):
+def query_looker(explore, metrics, group_by=None, order_by=None, dev_branch=None):
     """
     Queries Looker for the specified metrics, group by and order by fields.
 
@@ -150,7 +148,7 @@ def query_looker(metrics, group_by=None, order_by=None, explore=None, dev_branch
     pandas.DataFrame: The query results.
     """
 
-    lkr_query = query_to_looker_query(metrics, group_by, order_by, explore)
+    lkr_query = query_to_looker_query(explore, metrics, group_by, order_by)
     logging.info(f"Querying Looker explore: {lkr_query.view}, fields: {', '.join(lkr_query.fields)}")
     logging.debug(f"Looker query: {lkr_query}")
 
@@ -162,7 +160,7 @@ def query_looker(metrics, group_by=None, order_by=None, explore=None, dev_branch
             raise ValueError("MF_TRANSLATE_LOOKER_PROJECT environment variable must be set when using `--to-looker-dev-branch` option.")
         sdk.update_session(models40.WriteApiSession(workspace_id='dev'))
         sdk.update_git_branch(project_id=looker_project, body=models40.WriteGitBranch(name=dev_branch))
-        
+
 
     response = sdk.run_inline_query("csv", lkr_query)
 
