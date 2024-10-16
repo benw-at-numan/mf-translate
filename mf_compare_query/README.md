@@ -6,7 +6,7 @@
 ```bash
 export MF_TRANSLATE_LOOKER_MODEL='your_looker_model'
 ```
-Required, defines the LookML .model to be queried.
+Required, defines the LookML .model to be queried. Case-sensitive.
 
 ```bash
 export MF_TRANSLATE_LOOKER_PROJECT='your_looker_project'
@@ -15,15 +15,13 @@ Optional, required if including a `--to-looker-dev-branch` argument, see section
 
 ## Arguments
 ```bash
+--to-looker-explore EXPLORE_NAME (required): Specify the Looker Explore to query against. 
+
 --metrics SEQUENCE (required): A comma-separated list of metrics to query, e.g., --metrics bookings,messages. The metrics must be derived from measures in the same semantic model.
 
 --group-by SEQUENCE (optional): A comma-separated list of dimensions or entities to group by, e.g., --group-by customer_name,region.
 
 --order-by SEQUENCE (optional): A comma-separated list of dimensions or entities to order the results by, e.g., --order-by customer_name,-region. Use - to specify descending order for a dimension.
-
---to-looker (optional): Add this flag to compare the MetricFlow query results to Looker.
-
---to-looker-explore NAME (optional): Specify the Looker Explore to query for comparison. If not provided, the Explore will be inferred from the --metrics input.
 
 --to-looker-dev-branch BRANCH_NAME (optional): Specify a development branch for Looker comparisons. If not provided, the Looker production environment will be used.
 

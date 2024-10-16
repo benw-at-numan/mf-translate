@@ -31,7 +31,7 @@ Note that the model name is case sensitive.
 
 Compare a MetricFlow query results to the equivalent Looker query:
 ```bash
-mf-compare-query --metrics deliveries_count --group-by delivery_person_id__full_name --to-looker
+mf-compare-query --to-looker-explore deliveries --metrics deliveries_count --group-by delivery_person_id__full_name
 ```
 See the `mf-compare-query` [readme](mf_compare_query/README.md) for more information.
 
