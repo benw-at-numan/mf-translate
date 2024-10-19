@@ -1,4 +1,4 @@
-import mf_translate.to_lkml as to_lkml
+import mf_translate.to_looker as to_looker
 import logging
 import re
 
@@ -16,11 +16,11 @@ def test_filter_expression(monkeypatch):
         ]
     }
 
-    monkeypatch.setattr(to_lkml, "SEMANTIC_MODELS", [deliveries_model])
+    monkeypatch.setattr(to_looker, "SEMANTIC_MODELS", [deliveries_model])
 
     mf_filter = "{{Dimension('delivery__delivery_rating')}} = 5"
-    lkml_filter = to_lkml.sql_expression_to_lkml(expression=mf_filter,
-                                                 from_model=deliveries_model)
+    lkml_filter = to_looker.sql_expression_to_lkml(expression=mf_filter,
+                                                   from_model=deliveries_model)
 
     assert lkml_filter == "${delivery_rating} = 5"
 
@@ -38,11 +38,11 @@ def test_another_filter_expression(monkeypatch):
         ]
     }
 
-    monkeypatch.setattr(to_lkml, "SEMANTIC_MODELS", [orders_model])
+    monkeypatch.setattr(to_looker, "SEMANTIC_MODELS", [orders_model])
 
     mf_filter = "coalesce( {{ Dimension( 'order_id__discount_code'  ) }}, 'NO_DISCOUNT' ) != 'STAFF_ORDER'"
-    lkml_filter = to_lkml.sql_expression_to_lkml(expression=mf_filter,
-                                                 from_model=orders_model)
+    lkml_filter = to_looker.sql_expression_to_lkml(expression=mf_filter,
+                                                   from_model=orders_model)
 
     assert lkml_filter == "coalesce( ${discount_code}, 'NO_DISCOUNT' ) != 'STAFF_ORDER'"
 
@@ -70,11 +70,11 @@ def test_foreign_filter_expression(monkeypatch):
         ]
     }
 
-    monkeypatch.setattr(to_lkml, "SEMANTIC_MODELS", [customers_model, orders_model])
+    monkeypatch.setattr(to_looker, "SEMANTIC_MODELS", [customers_model, orders_model])
 
     mf_filter = "{{ Dimension( 'customer_id__customer_type') }} = 'returning'"
-    lkml_filter = to_lkml.sql_expression_to_lkml(expression=mf_filter,
-                                                 from_model=orders_model)
+    lkml_filter = to_looker.sql_expression_to_lkml(expression=mf_filter,
+                                                   from_model=orders_model)
 
     assert lkml_filter == "${customers.customer_type} = 'returning'"
 
@@ -92,11 +92,11 @@ def test_calculation_expression(monkeypatch):
         ]
     }
 
-    monkeypatch.setattr(to_lkml, "SEMANTIC_MODELS", [orders_model])
+    monkeypatch.setattr(to_looker, "SEMANTIC_MODELS", [orders_model])
 
     mf_calc = "{{ Dimension('order_id__revenue') }} - {{ Dimension('order_id__discount') }}"
-    lkml_calc = to_lkml.sql_expression_to_lkml(expression=mf_calc,
-                                               from_model=orders_model)
+    lkml_calc = to_looker.sql_expression_to_lkml(expression=mf_calc,
+                                                 from_model=orders_model)
 
     assert lkml_calc == "${revenue} - ${discount}"
 
@@ -128,12 +128,12 @@ def test_unqualified_calculation_expression(monkeypatch):
         }
     }
 
-    monkeypatch.setattr(to_lkml, "SEMANTIC_MODELS", [orders_model])
-    monkeypatch.setattr(to_lkml, 'DBT_NODES', nodes)
+    monkeypatch.setattr(to_looker, "SEMANTIC_MODELS", [orders_model])
+    monkeypatch.setattr(to_looker, 'DBT_NODES', nodes)
 
     mf_calc = "{{ Dimension('order_id__revenue') }} - discount"
-    lkml_calc = to_lkml.sql_expression_to_lkml(expression=mf_calc,
-                                               from_model=orders_model)
+    lkml_calc = to_looker.sql_expression_to_lkml(expression=mf_calc,
+                                                 from_model=orders_model)
 
     assert lkml_calc == "${revenue} - ${TABLE}.discount"
 
@@ -173,10 +173,10 @@ def test_simple_metric(monkeypatch):
         ]
     }
 
-    monkeypatch.setattr(to_lkml, "SEMANTIC_MODELS", [deliveries_model])
+    monkeypatch.setattr(to_looker, "SEMANTIC_MODELS", [deliveries_model])
 
-    lkml_delivery_count = to_lkml.metric_to_lkml_measures(metric=delivery_count,
-                                                          from_model=deliveries_model)
+    lkml_delivery_count = to_looker.metric_to_lkml_measures(metric=delivery_count,
+                                                            from_model=deliveries_model)
 
     lkml_measure = lkml_delivery_count[0]
 
@@ -237,11 +237,11 @@ def test_another_simple_metric(monkeypatch):
     }
 
 
-    monkeypatch.setattr(to_lkml, "SEMANTIC_MODELS", [orders_model])
-    monkeypatch.setattr(to_lkml, 'DBT_NODES', nodes)
+    monkeypatch.setattr(to_looker, "SEMANTIC_MODELS", [orders_model])
+    monkeypatch.setattr(to_looker, 'DBT_NODES', nodes)
 
-    lkml_order_total = to_lkml.metric_to_lkml_measures(metric=order_total,
-                                                       from_model=orders_model)
+    lkml_order_total = to_looker.metric_to_lkml_measures(metric=order_total,
+                                                         from_model=orders_model)
 
     lkml_measure = lkml_order_total[0]
     assert lkml_measure["name"] == "order_total"
@@ -316,10 +316,10 @@ def test_metric_with_category_filter(monkeypatch):
         "measures": []
     }
 
-    monkeypatch.setattr(to_lkml, "SEMANTIC_MODELS", [customers_model, orders_model])
+    monkeypatch.setattr(to_looker, "SEMANTIC_MODELS", [customers_model, orders_model])
 
-    lkml_large_order_count = to_lkml.metric_to_lkml_measures(metric=orders_for_returning_customers,
-                                                             from_model=orders_model)
+    lkml_large_order_count = to_looker.metric_to_lkml_measures(metric=orders_for_returning_customers,
+                                                               from_model=orders_model)
 
     lkml_measure = lkml_large_order_count[0]
 
@@ -380,10 +380,10 @@ def test_metric_with_multiple_category_filters(monkeypatch):
         ]
     }
 
-    monkeypatch.setattr(to_lkml, "SEMANTIC_MODELS", [orders_model])
+    monkeypatch.setattr(to_looker, "SEMANTIC_MODELS", [orders_model])
 
-    lkml_large_order_count = to_lkml.metric_to_lkml_measures(metric=large_order_count,
-                                                             from_model=orders_model)
+    lkml_large_order_count = to_looker.metric_to_lkml_measures(metric=large_order_count,
+                                                               from_model=orders_model)
 
     lkml_measure = lkml_large_order_count[0]
     assert lkml_measure["name"] == "large_orders"
@@ -485,12 +485,12 @@ def test_ratio_metric(monkeypatch):
         }
     }
 
-    monkeypatch.setattr(to_lkml, "METRICS", [food_revenue, revenue, food_revenue_pct])
-    monkeypatch.setattr(to_lkml, "SEMANTIC_MODELS", [orders_model])
-    monkeypatch.setattr(to_lkml, 'DBT_NODES', nodes)
+    monkeypatch.setattr(to_looker, "METRICS", [food_revenue, revenue, food_revenue_pct])
+    monkeypatch.setattr(to_looker, "SEMANTIC_MODELS", [orders_model])
+    monkeypatch.setattr(to_looker, 'DBT_NODES', nodes)
 
-    lkml_food_revenue_pct = to_lkml.metric_to_lkml_measures(metric=food_revenue_pct,
-                                                            from_model=orders_model)
+    lkml_food_revenue_pct = to_looker.metric_to_lkml_measures(metric=food_revenue_pct,
+                                                              from_model=orders_model)
 
     lkml_numerator = lkml_food_revenue_pct[0]
     assert lkml_numerator["name"] == "food_revenue_pct_numerator"
@@ -610,12 +610,12 @@ def test_filtered_ratio_metric(monkeypatch):
         }
     }
 
-    monkeypatch.setattr(to_lkml, "SEMANTIC_MODELS", [deliveries_model, orders_model])
-    monkeypatch.setattr(to_lkml, "METRICS", [pc_deliveries_with_5_stars, delivery_count])
-    monkeypatch.setattr(to_lkml, "DBT_NODES", nodes)
+    monkeypatch.setattr(to_looker, "SEMANTIC_MODELS", [deliveries_model, orders_model])
+    monkeypatch.setattr(to_looker, "METRICS", [pc_deliveries_with_5_stars, delivery_count])
+    monkeypatch.setattr(to_looker, "DBT_NODES", nodes)
 
-    lkml_pc_deliveries_with_5_stars = to_lkml.metric_to_lkml_measures(metric=pc_deliveries_with_5_stars,
-                                                                      from_model=deliveries_model)
+    lkml_pc_deliveries_with_5_stars = to_looker.metric_to_lkml_measures(metric=pc_deliveries_with_5_stars,
+                                                                        from_model=deliveries_model)
 
     lkml_numerator = lkml_pc_deliveries_with_5_stars[0]
     assert lkml_numerator["name"] == "pc_deliveries_with_5_stars_numerator"
@@ -719,11 +719,11 @@ def test_ratio_metric_with_non_simple_numerator(monkeypatch, caplog):
         ]
     }
 
-    monkeypatch.setattr(to_lkml, "SEMANTIC_MODELS", [orders_model])
-    monkeypatch.setattr(to_lkml, "METRICS", [revenue, cumulative_revenue, pc_revenue_of_total])
+    monkeypatch.setattr(to_looker, "SEMANTIC_MODELS", [orders_model])
+    monkeypatch.setattr(to_looker, "METRICS", [revenue, cumulative_revenue, pc_revenue_of_total])
 
     with caplog.at_level(logging.WARNING):
-        lkml_measures = to_lkml.metric_to_lkml_measures(metric=pc_revenue_of_total, from_model=orders_model)
+        lkml_measures = to_looker.metric_to_lkml_measures(metric=pc_revenue_of_total, from_model=orders_model)
 
     assert any(record.levelname == 'WARNING'
                 and "non-simple denominator metrics are not supported." in record.message for record in caplog.records)
@@ -810,11 +810,11 @@ def test_ratio_metric_with_numerator_and_denominator_from_different_models(monke
         ]
     }
 
-    monkeypatch.setattr(to_lkml, "SEMANTIC_MODELS", [deliveries_model, orders_model])
-    monkeypatch.setattr(to_lkml, "METRICS", [delivery_count, revenue, revenue_per_delivery])
+    monkeypatch.setattr(to_looker, "SEMANTIC_MODELS", [deliveries_model, orders_model])
+    monkeypatch.setattr(to_looker, "METRICS", [delivery_count, revenue, revenue_per_delivery])
 
     with caplog.at_level(logging.WARNING):
-        lkml_measures = to_lkml.metric_to_lkml_measures(metric=revenue_per_delivery, from_model=deliveries_model)
+        lkml_measures = to_looker.metric_to_lkml_measures(metric=revenue_per_delivery, from_model=deliveries_model)
 
     assert any(record.levelname == 'WARNING'
                 and "numerator and denominator from different models not supported." in record.message for record in caplog.records)

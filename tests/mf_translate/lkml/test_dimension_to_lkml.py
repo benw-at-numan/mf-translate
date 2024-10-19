@@ -1,4 +1,4 @@
-import mf_translate.to_lkml as to_lkml
+import mf_translate.to_looker as to_looker
 
 # lkml parser will not accept keys with None values
 def test_only_non_null_keys_translated():
@@ -15,8 +15,8 @@ def test_only_non_null_keys_translated():
         "name": "orders"
     }
 
-    lkml_dimension = to_lkml.dimension_to_lkml(dim=mf_dimension,
-                                               from_model=orders_model)
+    lkml_dimension = to_looker.dimension_to_lkml(dim=mf_dimension,
+                                                 from_model=orders_model)
 
     assert lkml_dimension["name"] == "delivery_id"
     assert 'description' not in lkml_dimension
@@ -53,18 +53,18 @@ def test_unqualified_field_expressions(monkeypatch):
         }
     }
 
-    monkeypatch.setattr(to_lkml, 'DBT_NODES', nodes)
+    monkeypatch.setattr(to_looker, 'DBT_NODES', nodes)
 
     mf_expr = 'revenue -discount'
-    lkml_sql = to_lkml.sql_expression_to_lkml(expression=mf_expr, from_model=orders_model)
+    lkml_sql = to_looker.sql_expression_to_lkml(expression=mf_expr, from_model=orders_model)
     assert lkml_sql == '${TABLE}.revenue -${TABLE}.discount'
 
     mf_expr = 'floor(revenue)'
-    lkml_sql = to_lkml.sql_expression_to_lkml(mf_expr, from_model=orders_model)
+    lkml_sql = to_looker.sql_expression_to_lkml(mf_expr, from_model=orders_model)
     assert lkml_sql == 'floor(${TABLE}.revenue)'
 
     mf_expr = 'CAST(datediff(second, ordered_at, delivered_at) as FLOAT) / 60*60'
-    lkml_sql = to_lkml.sql_expression_to_lkml(mf_expr, from_model=orders_model)
+    lkml_sql = to_looker.sql_expression_to_lkml(mf_expr, from_model=orders_model)
     assert lkml_sql == 'CAST(datediff(second, ${TABLE}.ordered_at, ${TABLE}.delivered_at) as FLOAT) / 60*60'
 
 
@@ -84,8 +84,8 @@ def test_category_dimension():
         "name": "deliveries"
     }
 
-    lkml_delivery_rating = to_lkml.dimension_to_lkml(dim=mf_delivery_rating,
-                                                     from_model=deliveries_model)
+    lkml_delivery_rating = to_looker.dimension_to_lkml(dim=mf_delivery_rating,
+                                                       from_model=deliveries_model)
 
     assert lkml_delivery_rating["name"] == "delivery_rating"
     assert lkml_delivery_rating["description"] == "The rating the customer gave the delivery person."
@@ -118,10 +118,10 @@ def test_category_dim_with_expr(monkeypatch):
         "expr": "case when quantity > 10 then true else false end",
     }
 
-    monkeypatch.setattr(to_lkml, 'DBT_NODES', nodes)
+    monkeypatch.setattr(to_looker, 'DBT_NODES', nodes)
 
-    lkml_is_bulk_transaction = to_lkml.dimension_to_lkml(dim=mf_is_bulk_transaction,
-                                                         from_model=orders_model)
+    lkml_is_bulk_transaction = to_looker.dimension_to_lkml(dim=mf_is_bulk_transaction,
+                                                           from_model=orders_model)
 
     assert lkml_is_bulk_transaction["name"] == "is_bulk_transaction"
     assert "type" not in lkml_is_bulk_transaction
@@ -157,10 +157,10 @@ def test_time_dimension(monkeypatch):
         }
     }
 
-    monkeypatch.setattr(to_lkml, 'DBT_NODES', nodes)
+    monkeypatch.setattr(to_looker, 'DBT_NODES', nodes)
 
-    lkml_create_date = to_lkml.dimension_to_lkml(dim=mf_create_date,
-                                                 from_model=orders_model)
+    lkml_create_date = to_looker.dimension_to_lkml(dim=mf_create_date,
+                                                   from_model=orders_model)
 
     assert lkml_create_date["name"] == "created_at"
     assert lkml_create_date["type"] == "time"
@@ -198,10 +198,10 @@ def test_monthly_time_dimension(monkeypatch):
         }
     }
 
-    monkeypatch.setattr(to_lkml, 'DBT_NODES', nodes)
+    monkeypatch.setattr(to_looker, 'DBT_NODES', nodes)
 
-    lkml_invoice_month = to_lkml.dimension_to_lkml(dim=mf_invoice_month,
-                                                   from_model=invoices_model)
+    lkml_invoice_month = to_looker.dimension_to_lkml(dim=mf_invoice_month,
+                                                     from_model=invoices_model)
 
     assert lkml_invoice_month["name"] == "invoice_month"
     assert lkml_invoice_month["type"] == "time"
@@ -236,10 +236,10 @@ def test_time_dim_without_granularity(monkeypatch):
         "expr": "ts_ordered"
     }
 
-    monkeypatch.setattr(to_lkml, 'DBT_NODES', nodes)
+    monkeypatch.setattr(to_looker, 'DBT_NODES', nodes)
 
-    lkml_order_date = to_lkml.dimension_to_lkml(dim=mf_order_date,
-                                                from_model=orders_model)
+    lkml_order_date = to_looker.dimension_to_lkml(dim=mf_order_date,
+                                                  from_model=orders_model)
 
     assert lkml_order_date["name"] == "ordered_at_test"
     assert lkml_order_date["type"] == "date_time"
