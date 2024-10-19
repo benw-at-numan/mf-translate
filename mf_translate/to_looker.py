@@ -263,7 +263,7 @@ def metric_to_lkml_measures(metric, from_model):
     """
 
     if metric["type"] in ["conversion", "cumulative", "derived"]:
-        logging.warning(f"Skipped {metric['name']} - {metric['type']} metrics are not yet supported.")
+        # logging.warning(f"Skipped {metric['name']} - {metric['type']} metrics are not yet supported.")
         return []
 
     elif metric["type"] == "simple":
@@ -276,7 +276,6 @@ def metric_to_lkml_measures(metric, from_model):
         if metric.get("description") != f"Metric created from measure {metric['name']}":
             lkml_measure["description"] = metric["description"]
 
-        logging.info(f"Translated simple metric {lkml_measure['name']}.")
         return [lkml_measure]
 
     elif metric["type"] == "ratio":
@@ -290,7 +289,7 @@ def metric_to_lkml_measures(metric, from_model):
         numerator_metric = metrics_dict[numerator_params["name"]]
 
         if numerator_metric.get("type") != "simple":
-            logging.warning(f"Skipped ratio metric {metric['name']} - non-simple numerator metrics are not supported.")
+            # logging.warning(f"Skipped ratio metric {metric['name']} - non-simple numerator metrics are not supported.")
             return []
 
         lkml_numerator = simple_metric_to_lkml_measure(metric=numerator_metric,
@@ -305,7 +304,7 @@ def metric_to_lkml_measures(metric, from_model):
         denominator_metric = metrics_dict[denominator_params["name"]]
 
         if denominator_metric.get("type") != "simple":
-            logging.warning(f"Skipped ratio metric {metric['name']} - non-simple denominator metrics are not supported.")
+            # logging.warning(f"Skipped ratio metric {metric['name']} - non-simple denominator metrics are not supported.")
             return []
 
         lkml_denominator = simple_metric_to_lkml_measure(metric=denominator_metric,
@@ -328,12 +327,11 @@ def metric_to_lkml_measures(metric, from_model):
         lkml_ratio["sql"] = f"${{{lkml_numerator['name']}}} / nullif(${{{lkml_denominator['name']}}}, 0)"
 
         if lkml_numerator["parent_view"] != lkml_denominator["parent_view"]:
-            logging.warning(f"Skipped ratio metric {lkml_ratio['name']} - numerator and denominator from different models not supported.")
+            # logging.warning(f"Skipped ratio metric {lkml_ratio['name']} - numerator and denominator from different models not supported.")
             return []
 
         lkml_ratio["parent_view"] = lkml_numerator["parent_view"]
 
-        logging.info(f"Translated ratio metric {lkml_ratio['name']}.")
         return [lkml_numerator, lkml_denominator, lkml_ratio]
 
 

@@ -24,7 +24,7 @@ if result.returncode != 0:
 
 # %%
 # LOAD MANIFESTS
-manifest_dir = os.getenv('MF_TRANSLATE__DBT_MANIFIEST_DIR')
+manifest_dir = os.getenv('MF_TRANSLATE_DBT_MANIFIEST_DIR')
 if not manifest_dir:
     raise ValueError("Manifest directory must be provided.")
     
