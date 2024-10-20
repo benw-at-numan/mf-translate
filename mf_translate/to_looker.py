@@ -278,8 +278,9 @@ def metric_to_lkml_measures(metric, from_model):
         if metric.get("label") != metric['name']:
             lkml_measure["label"] = metric["label"]
 
-        if metric.get("description") != f"Metric created from measure {metric['name']}":
-            lkml_measure["description"] = metric["description"]
+        if metric.get("description") != f"Metric created from measure {metric['name']}" \
+            and len(metric.get("description")) > 0:
+                lkml_measure["description"] = metric["description"]
 
         return [lkml_measure]
 
