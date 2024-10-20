@@ -341,13 +341,13 @@ def metric_to_lkml_measures(metric, from_model):
         return [lkml_numerator, lkml_denominator, lkml_ratio]
 
 
-def model_to_lkml_view(model):
+def model_to_lkml_view(model, view_name=None):
     """
     Translates a MetricFlow model to a LookML view.
     """
 
     lkml_view = {
-        "name": model['name'],
+        "name": view_name or model['name'],
         "sql_table_name": model["node_relation"]["relation_name"],
         "dimension_groups": [],
         "dimensions": [],
@@ -371,7 +371,7 @@ def model_to_lkml_view(model):
         lkml_measures = metric_to_lkml_measures(metric, model)
 
         for lkml_measure in lkml_measures:
-            if lkml_measure['parent_view'] == lkml_view['name']:
+            if lkml_measure['parent_view'] == model['name']:
                 del lkml_measure['parent_view']
                 lkml_view['measures'].append(lkml_measure)
 

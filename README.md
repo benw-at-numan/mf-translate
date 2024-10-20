@@ -12,7 +12,7 @@ pip install git+https://github.com/benw-at-birdie/mf-translate.git
 ### 2. Translate a model
 Translate all the dimensions and metrics from the `deliveries` semantic model.
 ```bash
-mf-translate mf-translate --model deliveries --to-looker > looker/deliveries_base.view.lkml
+mf-translate --model deliveries --to-looker-view deliveries_base > looker/deliveries_base.view.lkml
 ```
 
 ### 3. Compare semantic layer queries

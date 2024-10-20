@@ -26,12 +26,12 @@ def main():
 
     parser = argparse.ArgumentParser(description='mf-translate converts MetricFlow model definitions to alternative semantic layers.')
     parser.add_argument('--model', required=True, help='Specify the model to be translated name')
-    parser.add_argument('--to-looker', action='store_true', help='Convert to Looker view')
+    parser.add_argument('--to-looker-view', type=str, help='Name of the Looker view to be created')
 
     args = parser.parse_args()
 
-    if not (args.to_looker):
-        raise ValueError("Only translations to Looker are supported at the moment.")
+    if not (args.to_looker_view):
+        raise ValueError("Only translations to Looker are supported at the moment. Please include the --to-looker-view flag.")
 
     result = subprocess.run(['dbt', 'parse'], capture_output=True, text=True)
     if result.returncode != 0:
@@ -42,10 +42,10 @@ def main():
 
     model_dict = {model['name']: model for model in semantic_manifest['semantic_models']}
 
-    if args.to_looker:
+    if args.to_looker_view:
         to_looker.set_manifests(metricflow_semantic_manifest=semantic_manifest,
                                 dbt_manifest=manifest)
-        lkml_view = to_looker.model_to_lkml_view(model=model_dict[args.model])
+        lkml_view = to_looker.model_to_lkml_view(model=model_dict[args.model], view_name=args.to_looker_view)
         print(lkml.dump({'views': [lkml_view]}))
 
 if __name__ == '__main__':
