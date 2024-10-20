@@ -1,5 +1,6 @@
 import re
 import logging
+import os
 
 SEMANTIC_MODELS = [] # Used by sql_expression_to_lkml(), simple_metric_to_lkml_measure()
 METRICS = []         # ""      metric_to_lkml_measures(), model_to_lkml_view()
@@ -341,8 +342,15 @@ def metric_to_lkml_measures(metric, from_model):
 
         if metric.get("description"):
             lkml_ratio["description"] = metric["description"]
+            
+        target_warehouse_type = os.getenv("MF_TRANSLATE_TARGET_WAREHOUSE_TYPE").lower()
 
-        lkml_ratio["sql"] = f"${{{numerator_name}}} / nullif(${{{denominator_name}}}, 0)"
+        if target_warehouse_type == "bigquery":
+            lkml_ratio["sql"] = f"cast(${{{numerator_name}}} as float64) / nullif(${{{denominator_name}}}, 0)"
+        elif target_warehouse_type in ["snowflake", 'redshift']:
+            lkml_ratio["sql"] = f"${{{numerator_name}}}::double / nullif(${{{denominator_name}}}, 0)"
+        else:
+            raise ValueError("MF_TRANSLATE_TARGET_WAREHOUSE_TYPE environment variable must be set to translate ratio metrics. Supported values are 'bigquery', 'snowflake' and 'redshift'.")
 
         if custom_lkml_numerator["parent_view"] != custom_lkml_denominator["parent_view"]:
             logging.debug(f"Skipped ratio metric {lkml_ratio['name']} - numerator and denominator from different models not supported.")

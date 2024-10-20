@@ -600,6 +600,8 @@ def test_ratio_metric(monkeypatch):
     monkeypatch.setattr(to_looker, "SEMANTIC_MODELS", [orders_model])
     monkeypatch.setattr(to_looker, 'DBT_NODES', nodes)
 
+    monkeypatch.setenv("MF_TRANSLATE_TARGET_WAREHOUSE_TYPE", "redshift")
+
     lkml_food_revenue_pct = to_looker.metric_to_lkml_measures(metric=food_revenue_pct,
                                                               from_model=orders_model)
 
@@ -608,7 +610,7 @@ def test_ratio_metric(monkeypatch):
     assert lkml_ratio["type"] == "number"
     assert lkml_ratio["description"] == "The % of order revenue from food."
     assert lkml_ratio["label"] == "Food Revenue %"
-    assert lkml_ratio["sql"] == "${food_revenue} / nullif(${revenue}, 0)"
+    assert lkml_ratio["sql"] == "${food_revenue}::double / nullif(${revenue}, 0)"
     assert lkml_ratio["parent_view"] == "orders"
 
 
@@ -719,6 +721,8 @@ def test_filtered_ratio_metric(monkeypatch):
     monkeypatch.setattr(to_looker, "METRICS", [pc_deliveries_with_5_stars, delivery_count])
     monkeypatch.setattr(to_looker, "DBT_NODES", nodes)
 
+    monkeypatch.setenv("MF_TRANSLATE_TARGET_WAREHOUSE_TYPE", "bigquery")
+
     lkml_pc_deliveries_with_5_stars = to_looker.metric_to_lkml_measures(metric=pc_deliveries_with_5_stars,
                                                                         from_model=deliveries_model)
 
@@ -756,7 +760,7 @@ def test_filtered_ratio_metric(monkeypatch):
     assert lkml_ratio["type"] == "number"
     assert lkml_ratio["description"] == "Percentage of deliveries that received a 5-star rating."
     assert lkml_ratio["label"] == "Deliveries with 5 stars (%)"
-    assert lkml_ratio["sql"] == "${pc_deliveries_with_5_stars_numerator} / nullif(${pc_deliveries_with_5_stars_denominator}, 0)"
+    assert lkml_ratio["sql"] == "cast(${pc_deliveries_with_5_stars_numerator} as float64) / nullif(${pc_deliveries_with_5_stars_denominator}, 0)"
     assert lkml_ratio["parent_view"] == "deliveries"
 
 
@@ -826,6 +830,8 @@ def test_ratio_metric_with_non_simple_numerator(monkeypatch, caplog):
 
     monkeypatch.setattr(to_looker, "SEMANTIC_MODELS", [orders_model])
     monkeypatch.setattr(to_looker, "METRICS", [revenue, cumulative_revenue, pc_revenue_of_total])
+
+    monkeypatch.setenv("MF_TRANSLATE_TARGET_WAREHOUSE_TYPE", "bigquery")
 
     with caplog.at_level(logging.DEBUG):
         lkml_measures = to_looker.metric_to_lkml_measures(metric=pc_revenue_of_total, from_model=orders_model)
@@ -917,6 +923,8 @@ def test_ratio_metric_with_numerator_and_denominator_from_different_models(monke
 
     monkeypatch.setattr(to_looker, "SEMANTIC_MODELS", [deliveries_model, orders_model])
     monkeypatch.setattr(to_looker, "METRICS", [delivery_count, revenue, revenue_per_delivery])
+
+    monkeypatch.setenv("MF_TRANSLATE_TARGET_WAREHOUSE_TYPE", "redshift")
 
     with caplog.at_level(logging.DEBUG):
         lkml_measures = to_looker.metric_to_lkml_measures(metric=revenue_per_delivery, from_model=deliveries_model)
