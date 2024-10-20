@@ -34,6 +34,9 @@ def sql_expression_to_lkml(expression, from_model):
     str: The LookML SQL expression.
     """
 
+    expression = expression.strip()
+    expression = expression.replace('\n', ' ')
+
     # Step 1: Replace unqualified table fields with ${TABLE}.field
     if DBT_NODES:
 
