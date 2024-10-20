@@ -289,20 +289,27 @@ def metric_to_lkml_measures(metric, from_model):
         metric_where_filters = (metric.get("filter") or  {}).get("where_filters", [])
         metrics_dict = {m["name"]: m for m in METRICS}
 
+        lkml_measures = []
+
         # NUMERATOR
         numerator_params = metric["type_params"]["numerator"]
         numerator_where_filters = (numerator_params.get("filter") or  {}).get("where_filters", [])
         numerator_metric = metrics_dict[numerator_params["name"]]
 
         if numerator_metric.get("type") != "simple":
-            # logging.warning(f"Skipped ratio metric {metric['name']} - non-simple numerator metrics are not supported.")
+            logging.debug(f"Skipped ratio metric {metric['name']} - non-simple numerator metrics are not supported.")
             return []
 
-        lkml_numerator = simple_metric_to_lkml_measure(metric=numerator_metric,
-                                                       from_model=from_model,
-                                                       additional_where_filters=numerator_where_filters + metric_where_filters)
-        lkml_numerator["name"] = f"{metric['name']}_numerator"
-        lkml_numerator["hidden"] = 'yes'
+        custom_lkml_numerator = simple_metric_to_lkml_measure(metric=numerator_metric,
+                                                              from_model=from_model,
+                                                              additional_where_filters=numerator_where_filters + metric_where_filters)
+
+        if len(metric_where_filters + numerator_where_filters) > 0:
+            custom_lkml_numerator["hidden"] = 'yes'
+            numerator_name = custom_lkml_numerator["name"] = f"{metric['name']}_numerator"
+            lkml_measures.append(custom_lkml_numerator)
+        else:
+            numerator_name = numerator_params["name"]
 
         # DENOMINATOR
         denominator_params = metric["type_params"]["denominator"]
@@ -310,14 +317,19 @@ def metric_to_lkml_measures(metric, from_model):
         denominator_metric = metrics_dict[denominator_params["name"]]
 
         if denominator_metric.get("type") != "simple":
-            # logging.warning(f"Skipped ratio metric {metric['name']} - non-simple denominator metrics are not supported.")
+            logging.debug(f"Skipped ratio metric {metric['name']} - non-simple denominator metrics are not supported.")
             return []
+        
+        custom_lkml_denominator = simple_metric_to_lkml_measure(metric=denominator_metric,
+                                                                from_model=from_model,
+                                                                additional_where_filters=denominator_where_filters + metric_where_filters)
 
-        lkml_denominator = simple_metric_to_lkml_measure(metric=denominator_metric,
-                                                         from_model=from_model,
-                                                         additional_where_filters=denominator_where_filters + metric_where_filters)
-        lkml_denominator["name"] = f"{metric['name']}_denominator"
-        lkml_denominator["hidden"] = 'yes'
+        if len(metric_where_filters + numerator_where_filters)  > 0:
+            custom_lkml_denominator["hidden"] = 'yes'
+            denominator_name = custom_lkml_denominator["name"] = f"{metric['name']}_denominator"
+            lkml_measures.append(custom_lkml_denominator)
+        else:
+            denominator_name = denominator_params["name"]
 
         # RATIO
         lkml_ratio = {}
@@ -330,15 +342,16 @@ def metric_to_lkml_measures(metric, from_model):
         if metric.get("description"):
             lkml_ratio["description"] = metric["description"]
 
-        lkml_ratio["sql"] = f"${{{lkml_numerator['name']}}} / nullif(${{{lkml_denominator['name']}}}, 0)"
+        lkml_ratio["sql"] = f"${{{numerator_name}}} / nullif(${{{denominator_name}}}, 0)"
 
-        if lkml_numerator["parent_view"] != lkml_denominator["parent_view"]:
-            # logging.warning(f"Skipped ratio metric {lkml_ratio['name']} - numerator and denominator from different models not supported.")
+        if custom_lkml_numerator["parent_view"] != custom_lkml_denominator["parent_view"]:
+            logging.debug(f"Skipped ratio metric {lkml_ratio['name']} - numerator and denominator from different models not supported.")
             return []
 
-        lkml_ratio["parent_view"] = lkml_numerator["parent_view"]
+        lkml_ratio["parent_view"] = custom_lkml_numerator["parent_view"]
 
-        return [lkml_numerator, lkml_denominator, lkml_ratio]
+        lkml_measures.append(lkml_ratio)
+        return lkml_measures
 
 
 def model_to_lkml_view(model, view_name=None):

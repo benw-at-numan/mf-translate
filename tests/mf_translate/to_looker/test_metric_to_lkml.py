@@ -569,14 +569,14 @@ def test_ratio_metric(monkeypatch):
                 "name": "revenue_measure",
                 "agg": "sum",
                 "description": "The revenue generated for each order item. Revenue is calculated as a sum of revenue associated with each product in an order.",
-                "create_metric": False,
+                "create_metric": True,
                 "expr": "product_price"
             },
             {
                 "name": "food_revenue_measure",
                 "agg": "sum",
                 "description": "The food revenue generated for each order item. Revenue is calculated as a sum of revenue associated with each food product in an order.",
-                "create_metric": False,
+                "create_metric": True,
                 "expr": "case when is_food_item = 1 then product_price else 0 end"
             }
         ],
@@ -603,30 +603,12 @@ def test_ratio_metric(monkeypatch):
     lkml_food_revenue_pct = to_looker.metric_to_lkml_measures(metric=food_revenue_pct,
                                                               from_model=orders_model)
 
-    lkml_numerator = lkml_food_revenue_pct[0]
-    assert lkml_numerator["name"] == "food_revenue_pct_numerator"
-    assert lkml_numerator["hidden"] == 'yes'
-    assert lkml_numerator["type"] == "sum"
-    assert 'description' not in lkml_numerator
-    assert 'label' not in lkml_numerator
-    assert lkml_numerator["sql"] == "case when ${TABLE}.is_food_item = 1 then ${TABLE}.product_price else 0 end"
-    assert lkml_numerator["parent_view"] == "orders"
-
-    lkml_denominator = lkml_food_revenue_pct[1]
-    assert lkml_denominator["name"] == "food_revenue_pct_denominator"
-    assert lkml_denominator["hidden"] == 'yes'
-    assert lkml_denominator["type"] == "sum"
-    assert 'description' not in lkml_denominator
-    assert 'label' not in lkml_denominator
-    assert lkml_denominator["sql"] == "${TABLE}.product_price"
-    assert lkml_denominator["parent_view"] == "orders"
-
-    lkml_ratio = lkml_food_revenue_pct[2]
+    lkml_ratio = lkml_food_revenue_pct[0]
     assert lkml_ratio["name"] == "food_revenue_pct"
     assert lkml_ratio["type"] == "number"
     assert lkml_ratio["description"] == "The % of order revenue from food."
     assert lkml_ratio["label"] == "Food Revenue %"
-    assert lkml_ratio["sql"] == "${food_revenue_pct_numerator} / nullif(${food_revenue_pct_denominator}, 0)"
+    assert lkml_ratio["sql"] == "${food_revenue} / nullif(${revenue}, 0)"
     assert lkml_ratio["parent_view"] == "orders"
 
 
@@ -778,7 +760,7 @@ def test_filtered_ratio_metric(monkeypatch):
     assert lkml_ratio["parent_view"] == "deliveries"
 
 
-def test_ratio_metric_with_non_simple_numerator(monkeypatch):
+def test_ratio_metric_with_non_simple_numerator(monkeypatch, caplog):
 
     revenue = {
         "name": "revenue",
@@ -845,12 +827,16 @@ def test_ratio_metric_with_non_simple_numerator(monkeypatch):
     monkeypatch.setattr(to_looker, "SEMANTIC_MODELS", [orders_model])
     monkeypatch.setattr(to_looker, "METRICS", [revenue, cumulative_revenue, pc_revenue_of_total])
 
-    lkml_measures = to_looker.metric_to_lkml_measures(metric=pc_revenue_of_total, from_model=orders_model)
+    with caplog.at_level(logging.DEBUG):
+        lkml_measures = to_looker.metric_to_lkml_measures(metric=pc_revenue_of_total, from_model=orders_model)
+
+    assert any(record.levelname == 'DEBUG'
+                and "non-simple denominator metrics are not supported." in record.message for record in caplog.records)
 
     assert len(lkml_measures) == 0
 
 
-def test_ratio_metric_with_numerator_and_denominator_from_different_models(monkeypatch):
+def test_ratio_metric_with_numerator_and_denominator_from_different_models(monkeypatch, caplog):
 
     delivery_count = {
         "name": "delivery_count",
@@ -932,6 +918,10 @@ def test_ratio_metric_with_numerator_and_denominator_from_different_models(monke
     monkeypatch.setattr(to_looker, "SEMANTIC_MODELS", [deliveries_model, orders_model])
     monkeypatch.setattr(to_looker, "METRICS", [delivery_count, revenue, revenue_per_delivery])
 
-    lkml_measures = to_looker.metric_to_lkml_measures(metric=revenue_per_delivery, from_model=deliveries_model)
+    with caplog.at_level(logging.DEBUG):
+        lkml_measures = to_looker.metric_to_lkml_measures(metric=revenue_per_delivery, from_model=deliveries_model)
+
+    assert any(record.levelname == 'DEBUG'
+                and "numerator and denominator from different models not supported." in record.message for record in caplog.records)
 
     assert len(lkml_measures) == 0
