@@ -189,8 +189,8 @@ def test_time_dimension_with_timezone(monkeypatch):
         }
     }
 
-    monkeypatch.setenv('MF_TRANSLATE__TARGET_DATABASE', 'BigQuery')
-    monkeypatch.setenv('MF_TRANSLATE__CUBE_TIMEZONE_FOR_TIME_DIMENSIONS', 'America/Los_Angeles')
+    monkeypatch.setenv('MF_TRANSLATE_TARGET_WAREHOUSE_TYPE', 'BigQuery')
+    monkeypatch.setenv('MF_TRANSLATE_CUBE_TIMEZONE_FOR_TIME_DIMENSIONS', 'America/Los_Angeles')
 
     cube_created_at = to_cube.dimension_to_cube(dim=created_at,
                                                 from_model=orders_model)
@@ -230,8 +230,8 @@ def test_time_dimension_with_timezone_2(monkeypatch):
         }
     }
 
-    monkeypatch.setenv('MF_TRANSLATE__TARGET_DATABASE', 'sNowflake')
-    monkeypatch.setenv('MF_TRANSLATE__CUBE_TIMEZONE_FOR_TIME_DIMENSIONS', 'America/Los_Angeles')
+    monkeypatch.setenv('MF_TRANSLATE_TARGET_WAREHOUSE_TYPE', 'sNowflake')
+    monkeypatch.setenv('MF_TRANSLATE_CUBE_TIMEZONE_FOR_TIME_DIMENSIONS', 'America/Los_Angeles')
 
     cube_created_at = to_cube.dimension_to_cube(dim=created_at,
                                                 from_model=orders_model)

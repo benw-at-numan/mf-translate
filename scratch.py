@@ -2,7 +2,7 @@
 # IMPORT REQUIREMENTS
 import subprocess
 import json
-import mf_translate.to_lkml as to_lkml
+import mf_translate.to_looker as to_looker
 import mf_translate.to_cube as to_cube
 
 import lkml
@@ -24,7 +24,7 @@ if result.returncode != 0:
 
 # %%
 # LOAD MANIFESTS
-manifest_dir = os.getenv('MF_TRANSLATE__DBT_MANIFIEST_DIR')
+manifest_dir = os.getenv('MF_TRANSLATE_DBT_MANIFIEST_DIR')
 if not manifest_dir:
     raise ValueError("Manifest directory must be provided.")
     
@@ -50,15 +50,15 @@ except FileNotFoundError:
 except json.JSONDecodeError:
     raise ValueError(f"The file {f'{manifest_dir}/manifest.json'} is not a valid JSON file.")
 
-to_lkml.set_manifests(metricflow_semantic_manifest=semantic_manifest,
-                      dbt_manifest=manifest)
+to_looker.set_manifests(metricflow_semantic_manifest=semantic_manifest,
+                        dbt_manifest=manifest)
 
 to_cube.set_manifests(metricflow_semantic_manifest=semantic_manifest,
                       dbt_manifest=manifest)
 
 # %%
 # TRANSLATE DELIVERIES
-deliveries_lkml_view = to_lkml.model_to_lkml_view(model=model_dict['deliveries'])
+deliveries_lkml_view = to_looker.model_to_lkml_view(model=model_dict['deliveries'])
 
 with open('looker/deliveries.view.lkml', 'w') as file:
     file.write(lkml.dump({'views': [deliveries_lkml_view]}))
@@ -70,7 +70,7 @@ with open('cube/model/cubes/deliveries_base.yml', 'w') as file:
 
 # %%
 # TRANSLATE ORDERS
-orders_lkml_view = to_lkml.model_to_lkml_view(model=model_dict['orders'])
+orders_lkml_view = to_looker.model_to_lkml_view(model=model_dict['orders'])
 with open('looker/orders.view.lkml', 'w') as file:
     file.write(lkml.dump({'views': [orders_lkml_view]}))
 
@@ -84,7 +84,7 @@ with open('cube/model/cubes/orders_base.yml', 'w') as file:
 
 # %%
 # TRANSLATE DELIVERY_PEOPLE
-delivery_people_lkml_view = to_lkml.model_to_lkml_view(model=model_dict['delivery_people'])
+delivery_people_lkml_view = to_looker.model_to_lkml_view(model=model_dict['delivery_people'])
 
 with open('looker/delivery_people.view.lkml', 'w') as file:
     file.write(lkml.dump({'views': [delivery_people_lkml_view]}))
@@ -92,14 +92,14 @@ with open('looker/delivery_people.view.lkml', 'w') as file:
 
 # %%
 # TRANSLATE CUSTOMERS
-customers_lkml_view = to_lkml.model_to_lkml_view(model=model_dict['customers'])
+customers_lkml_view = to_looker.model_to_lkml_view(model=model_dict['customers'])
 
 with open('looker/customers.view.lkml', 'w') as file:
     file.write(lkml.dump({'views': [customers_lkml_view]}))
 
 # %%
 # TRANSLATE LOCATIONS
-locations_lkml_view = to_lkml.model_to_lkml_view(model=model_dict['locations'])
+locations_lkml_view = to_looker.model_to_lkml_view(model=model_dict['locations'])
 
 with open('looker/locations.view.lkml', 'w') as file:
     file.write(lkml.dump({'views': [locations_lkml_view]}))

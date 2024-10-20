@@ -1,4 +1,4 @@
-import mf_translate.to_lkml as to_lkml
+import mf_translate.to_looker as to_looker
 
 def test_primary_key_entity(monkeypatch):
 
@@ -25,10 +25,10 @@ def test_primary_key_entity(monkeypatch):
         }
     }
 
-    monkeypatch.setattr(to_lkml, 'DBT_NODES', nodes)
+    monkeypatch.setattr(to_looker, 'DBT_NODES', nodes)
 
-    lkml_customer_dim = to_lkml.entity_to_lkml(entity=customer_entity,
-                                               from_model=customer_model)
+    lkml_customer_dim = to_looker.entity_to_lkml(entity=customer_entity,
+                                                 from_model=customer_model)
 
     assert lkml_customer_dim["name"] == "customer"
     assert lkml_customer_dim["description"] == "Customer identifier. Primary key."
@@ -49,8 +49,8 @@ def test_foreign_key_entity():
         "name": "orders"
     }
 
-    lkml_order_dim = to_lkml.entity_to_lkml(entity=order_entity,
-                                            from_model=orders_model)
+    lkml_order_dim = to_looker.entity_to_lkml(entity=order_entity,
+                                              from_model=orders_model)
 
     assert lkml_order_dim["name"] == "order_id"
     assert "primary_key" not in lkml_order_dim
@@ -82,10 +82,10 @@ def test_foreign_key_entity_with_custom_sql(monkeypatch):
         }
     }
 
-    monkeypatch.setattr(to_lkml, 'DBT_NODES', nodes)
+    monkeypatch.setattr(to_looker, 'DBT_NODES', nodes)
 
-    lkml_order_dim = to_lkml.entity_to_lkml(entity=delivery_person_entity,
-                                            from_model=orders_model)
+    lkml_order_dim = to_looker.entity_to_lkml(entity=delivery_person_entity,
+                                              from_model=orders_model)
 
     assert lkml_order_dim["name"] == "delivery_person_id"
     assert "primary_key" not in lkml_order_dim

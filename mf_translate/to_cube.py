@@ -64,6 +64,7 @@ def sql_expression_to_cube(expression, from_model):
         dimension_name = dim_inner_ref.split("__")[1] # 'delivery__delivery_rating' -> 'delivery_rating'
 
          # Get model for entity
+         # TODO: Need to account for multiple models with the same entity identifier (see sql_expression_to_lkml() in to_looker.py)
         model_for_entity = None
         for model in SEMANTIC_MODELS:
             for entity in model["entities"]:
@@ -124,22 +125,22 @@ def add_parentheses_to_sql(sql):
 
 def set_timezone_for_time_dimension(time_dimension_sql):
     """
-    Helper function for converting a time dimension SQL expression to a timezone-aware SQL expression. The timezone is set by the MF_TRANSLATE__CUBE_TIMEZONE_FOR_TIME_DIMENSIONS environment variable.
+    Helper function for converting a time dimension SQL expression to a timezone-aware SQL expression. The timezone is set by the MF_TRANSLATE_CUBE_TIMEZONE_FOR_TIME_DIMENSIONS environment variable.
 
     Cube requires a timestamp whereas DBT wants a datetime:
          - https://cube.dev/docs/guides/recipes/data-modeling/string-time-dimensions
          - https://github.com/dbt-labs/metricflow/issues/733
     """
 
-    timezone = os.getenv("MF_TRANSLATE__CUBE_TIMEZONE_FOR_TIME_DIMENSIONS")
+    timezone = os.getenv("MF_TRANSLATE_CUBE_TIMEZONE_FOR_TIME_DIMENSIONS")
 
     if timezone:
 
-        target_database = os.getenv("MF_TRANSLATE__TARGET_DATABASE")
+        target_warehouse_type = os.getenv("MF_TRANSLATE_TARGET_WAREHOUSE_TYPE")
 
-        if target_database.lower() == "bigquery":
+        if target_warehouse_type.lower() == "bigquery":
             return f"TIMESTAMP({time_dimension_sql}, '{timezone}')"
-        elif target_database.lower() == "snowflake":
+        elif target_warehouse_type.lower() == "snowflake":
             return f"CONVERT_TIMEZONE('{timezone}', {time_dimension_sql})"
 
     return add_parentheses_to_sql(time_dimension_sql)

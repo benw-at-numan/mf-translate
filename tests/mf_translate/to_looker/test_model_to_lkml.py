@@ -1,4 +1,4 @@
-import mf_translate.to_lkml as to_lkml
+import mf_translate.to_looker as to_looker
 
 def test_basic_model_to_lkml_view(monkeypatch):
 
@@ -67,10 +67,10 @@ def test_basic_model_to_lkml_view(monkeypatch):
         "label": "delivery_count"
     }
 
-    monkeypatch.setattr(to_lkml, "SEMANTIC_MODELS", [deliveries_model])
-    monkeypatch.setattr(to_lkml, "METRICS", [delivery_count])
+    monkeypatch.setattr(to_looker, "SEMANTIC_MODELS", [deliveries_model])
+    monkeypatch.setattr(to_looker, "METRICS", [delivery_count])
 
-    lkml_view = to_lkml.model_to_lkml_view(deliveries_model)
+    lkml_view = to_looker.model_to_lkml_view(deliveries_model)
 
     assert lkml_view["name"] == "deliveries"
     assert lkml_view['sql_table_name'] == "`fresh-iridium-428713-j5`.`jaffle_shop`.`deliveries`"

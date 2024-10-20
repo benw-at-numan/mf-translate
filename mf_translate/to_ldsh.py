@@ -46,6 +46,7 @@ def sql_expression_to_ldsh(expression, from_model):
         dimension_name = dim_inner_ref.split("__")[1] # 'delivery__delivery_rating' -> 'delivery_rating'
 
          # Get model for entity
+         # TODO: Need to account for multiple models with the same entity identifier (see sql_expression_to_lkml() in to_looker.py)
         model_for_entity = None
         for model in SEMANTIC_MODELS:
             for entity in model["entities"]:
