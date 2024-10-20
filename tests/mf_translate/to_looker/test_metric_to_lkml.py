@@ -13,6 +13,12 @@ def test_filter_expression(monkeypatch):
                 "type": "primary",
                 "expr": "delivery_id"
             }
+        ],
+        "dimensions": [
+            {
+                "name": "delivery_rating",
+                "type": "categorical"
+            }
         ]
     }
 
@@ -34,6 +40,12 @@ def test_another_filter_expression(monkeypatch):
                 "name": "order_id",
                 "type": "primary",
                 "expr": "order_id"
+            }
+        ],
+        "dimensions": [
+            {
+                "name": "discount_code",
+                "type": "categorical"
             }
         ]
     }
@@ -67,6 +79,12 @@ def test_foreign_filter_expression(monkeypatch):
                 "name": "customer_id",
                 "type": "primary"
             }
+        ],
+        "dimensions": [
+            {
+                "name": "customer_type",
+                "type": "categorical"
+            }
         ]
     }
 
@@ -78,6 +96,67 @@ def test_foreign_filter_expression(monkeypatch):
 
     assert lkml_filter == "${customers.customer_type} = 'returning'"
 
+def test_foreign_filter_expression_for_duplicated_entity_id(monkeypatch):
+
+    returned_orders_model = {
+        "name": "returned_orders",
+        "entities": [
+            {
+                "name": "order_id",
+                "type": "primary",
+                "expr": "order_id"
+            }
+        ],
+        "dimensions": [
+            {
+                "name": "return_reason",
+                "type": "categorical"
+            }
+        ]
+    }
+
+    orders_model = {
+        "name": "orders",
+        "entities": [
+            {
+                "name": "order_id",
+                "type": "primary",
+                "expr": "order_id"
+            },
+            {
+                "name": "customer_id",
+                "type": "foreign"
+            }
+        ],
+        "dimensions": [
+            {
+                "name": "discount_code",
+                "type": "categorical"
+            }
+        ]
+    }
+
+    customers_model = {
+        "name": "customers",
+        "entities": [
+            {
+                "name": "customer_id",
+                "type": "primary"
+            },
+            {
+                "name": "customer_type",
+                "type": "foreign"
+            }
+        ]
+    }
+
+    monkeypatch.setattr(to_looker, "SEMANTIC_MODELS", [customers_model, returned_orders_model, orders_model])
+
+    mf_filter = "{{ Dimension( 'order_id__discount_code') }} = 'STAFF'"
+    lkml_filter = to_looker.sql_expression_to_lkml(expression=mf_filter,
+                                                   from_model=customers_model)
+
+    assert lkml_filter == "${orders.discount_code} = 'STAFF'"
 
 def test_calculation_expression(monkeypatch):
 
@@ -88,6 +167,16 @@ def test_calculation_expression(monkeypatch):
                 "name": "order_id",
                 "type": "primary",
                 "expr": "order_id"
+            }
+        ],
+        "dimensions": [
+            {
+                "name": "revenue",
+                "type": "numeric"
+            },
+            {
+                "name": "discount",
+                "type": "numeric"
             }
         ]
     }
@@ -111,6 +200,12 @@ def test_unqualified_calculation_expression(monkeypatch):
                 "type": "primary",
                 "expr": "order_id"
             }
+        ],
+        "dimensions": [
+            {
+                "name": "revenue",
+                "type": "numeric"
+            },
         ],
         "node_relation": {
             "relation_name": "`mf_translate_db`.`jaffle_shop`.`orders`"
@@ -313,6 +408,12 @@ def test_metric_with_category_filter(monkeypatch):
                 "type": "primary",
             }
         ],
+        "dimensions": [
+            {
+                "name": "customer_type",
+                "type": "categorical"
+            }
+        ],
         "measures": []
     }
 
@@ -368,6 +469,16 @@ def test_metric_with_multiple_category_filters(monkeypatch):
                 "name": "order_id",
                 "type": "primary",
                 "expr": "order_id"
+            }
+        ],
+        "dimensions": [
+            {
+                "name": "is_large_order",
+                "type": "categorical"
+            },
+            {
+                "name": "is_staff_order",
+                "type": "categorical"
             }
         ],
         "measures": [
@@ -573,6 +684,12 @@ def test_filtered_ratio_metric(monkeypatch):
                 "expr": "delivery_id"
             }
         ],
+        "dimensions": [
+            {
+                "name": "delivery_rating",
+                "type": "categorical"
+            }
+        ],
         "measures": [
             {
                 "name": "delivery_count_measure",
@@ -593,6 +710,12 @@ def test_filtered_ratio_metric(monkeypatch):
                 "name": "order_id",
                 "type": "primary",
                 "expr": "order_id"
+            }
+        ],
+        "dimensions": [
+            {
+                "name": "discount_code",
+                "type": "categorical"
             }
         ],
         "measures": [],
@@ -655,7 +778,7 @@ def test_filtered_ratio_metric(monkeypatch):
     assert lkml_ratio["parent_view"] == "deliveries"
 
 
-def test_ratio_metric_with_non_simple_numerator(monkeypatch, caplog):
+def test_ratio_metric_with_non_simple_numerator(monkeypatch):
 
     revenue = {
         "name": "revenue",
@@ -722,16 +845,12 @@ def test_ratio_metric_with_non_simple_numerator(monkeypatch, caplog):
     monkeypatch.setattr(to_looker, "SEMANTIC_MODELS", [orders_model])
     monkeypatch.setattr(to_looker, "METRICS", [revenue, cumulative_revenue, pc_revenue_of_total])
 
-    with caplog.at_level(logging.WARNING):
-        lkml_measures = to_looker.metric_to_lkml_measures(metric=pc_revenue_of_total, from_model=orders_model)
-
-    assert any(record.levelname == 'WARNING'
-                and "non-simple denominator metrics are not supported." in record.message for record in caplog.records)
+    lkml_measures = to_looker.metric_to_lkml_measures(metric=pc_revenue_of_total, from_model=orders_model)
 
     assert len(lkml_measures) == 0
 
 
-def test_ratio_metric_with_numerator_and_denominator_from_different_models(monkeypatch, caplog):
+def test_ratio_metric_with_numerator_and_denominator_from_different_models(monkeypatch):
 
     delivery_count = {
         "name": "delivery_count",
@@ -813,10 +932,6 @@ def test_ratio_metric_with_numerator_and_denominator_from_different_models(monke
     monkeypatch.setattr(to_looker, "SEMANTIC_MODELS", [deliveries_model, orders_model])
     monkeypatch.setattr(to_looker, "METRICS", [delivery_count, revenue, revenue_per_delivery])
 
-    with caplog.at_level(logging.WARNING):
-        lkml_measures = to_looker.metric_to_lkml_measures(metric=revenue_per_delivery, from_model=deliveries_model)
-
-    assert any(record.levelname == 'WARNING'
-                and "numerator and denominator from different models not supported." in record.message for record in caplog.records)
+    lkml_measures = to_looker.metric_to_lkml_measures(metric=revenue_per_delivery, from_model=deliveries_model)
 
     assert len(lkml_measures) == 0

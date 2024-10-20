@@ -62,18 +62,20 @@ def sql_expression_to_lkml(expression, from_model):
         entity_name = dim_inner_ref.split("__")[0]    # 'delivery__delivery_rating' -> 'delivery'
         dimension_name = dim_inner_ref.split("__")[1] # 'delivery__delivery_rating' -> 'delivery_rating'
 
-         # Get model for entity
-        model_for_entity = None
+         # Get model for entity, dimension pair
+        model_for_dimension = None
         for model in SEMANTIC_MODELS:
             for entity in model["entities"]:
                 if entity["name"] == entity_name and entity["type"] == 'primary':
-                    model_for_entity = model
-                    break
+                    if 'dimensions' in model:
+                        if any(dim['name'] == dimension_name for dim in model['dimensions']):
+                            model_for_dimension = model
+                            break
 
-        if model_for_entity['name'] == from_model['name']:
+        if model_for_dimension['name'] == from_model['name']:
             return "${" + dimension_name + "}"
         else:
-            return "${" + f"{model_for_entity['name']}.{dimension_name}" + "}"
+            return "${" + f"{model_for_dimension['name']}.{dimension_name}" + "}"
 
 
     return re.sub(dim_ref_pattern, translate_dim_ref, expression.strip())

@@ -77,17 +77,32 @@ def field_to_looker_dim(field):
     field_parts = field.split("__")
     entity_name = field_parts[0]
 
-    model_for_entity = None
-    for model in SEMANTIC_MODELS:
-        for entity in model["entities"]:
-            if entity["name"] == entity_name and entity["type"] == 'primary':
-                model_for_entity = model
-                break
+
 
     if len(field_parts) > 1:
-        dim = field_parts[1]
-        return model_for_entity["name"] + "." + dim
+        dimension_name = field_parts[1]
+
+        # Get model for entity, dimension pair
+        model_for_dimension = None
+        for model in SEMANTIC_MODELS:
+            for entity in model["entities"]:
+                if entity["name"] == entity_name and entity["type"] == 'primary':
+                    if 'dimensions' in model:
+                        if any(dim['name'] == dimension_name for dim in model['dimensions']):
+                            model_for_dimension = model
+                            break
+
+        return model_for_dimension["name"] + "." + dimension_name
     else:
+
+        # Get (any) model for the entity
+        model_for_entity = None
+        for model in SEMANTIC_MODELS:
+            for entity in model["entities"]:
+                if entity["name"] == entity_name and entity["type"] == 'primary':
+                    model_for_entity = model
+                    break
+
         return model_for_entity["name"] + "." + entity_name
 
 
