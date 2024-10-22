@@ -4,6 +4,7 @@ def test_primary_key_entity(monkeypatch):
 
     customer_entity = {
         "name": "customer",
+        "label": "Customer",
         "description": "Customer identifier. Primary key.",
         "type": "primary",
         "expr": "customer_id"
@@ -31,6 +32,7 @@ def test_primary_key_entity(monkeypatch):
                                                  from_model=customer_model)
 
     assert lkml_customer_dim["name"] == "customer"
+    assert lkml_customer_dim["label"] == "Customer"
     assert lkml_customer_dim["description"] == "Customer identifier. Primary key."
     assert "type" not in lkml_customer_dim
     assert lkml_customer_dim["hidden"] == 'yes'

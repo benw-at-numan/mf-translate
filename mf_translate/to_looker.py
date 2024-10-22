@@ -100,6 +100,9 @@ def entity_to_lkml(entity, from_model):
 
     lkml_dim["name"] = entity["name"]
 
+    if entity.get("label"):
+        lkml_dim["label"] = entity["label"]
+
     if entity.get("description"):
         lkml_dim["description"] = entity["description"]
 
