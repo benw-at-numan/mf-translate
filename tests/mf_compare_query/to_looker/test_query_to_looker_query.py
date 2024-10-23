@@ -91,7 +91,7 @@ def test_single_metric_with_group_by_entity(monkeypatch):
 
     assert lkr_query.model == 'looker_model'
     assert lkr_query.view == 'orders'
-    assert lkr_query.fields == ['orders.order_total', 'customers.customer_id']
+    assert lkr_query.fields == ['customers.customer_id', 'orders.order_total']
     assert lkr_query.sorts == None
 
 
@@ -145,7 +145,7 @@ def test_single_metric_with_group_and_order_by(monkeypatch):
 
     assert lkr_query.model == 'looker_model'
     assert lkr_query.view == 'orders'
-    assert lkr_query.fields == ['orders.order_total', 'locations.location_name']
+    assert lkr_query.fields == ['locations.location_name', 'orders.order_total']
     assert lkr_query.sorts == ['-locations.location_name']
 
 
@@ -215,7 +215,7 @@ def test_single_metric_with_group_and_order_by_across_models_with_duplicated_ent
 
     assert lkr_query.model == 'looker_model'
     assert lkr_query.view == 'orders'
-    assert lkr_query.fields == ['orders.order_total', 'locations.location_name']
+    assert lkr_query.fields == ['locations.location_name', 'orders.order_total']
     assert lkr_query.sorts == ['-locations.location_name']
 
 def test_single_metric_with_group_and_order_by_metric(monkeypatch):
@@ -268,7 +268,7 @@ def test_single_metric_with_group_and_order_by_metric(monkeypatch):
 
     assert lkr_query.model == 'looker_model'
     assert lkr_query.view == 'orders'
-    assert lkr_query.fields == ['orders.order_total', 'locations.location_name']
+    assert lkr_query.fields == ['locations.location_name', 'orders.order_total']
     assert lkr_query.sorts == ['-orders.order_total']
 
 

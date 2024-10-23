@@ -66,8 +66,8 @@ def main():
     logging.info(f"Looker query returned {lkr_results.shape[0]} rows.")
 
     mf_results.columns = lkr_results.columns # MF does not return column names so overwrite them with Looker's.
-    if not to_looker.do_query_results_match(df1=mf_results, 
-                                            df2=lkr_results):
+    if not to_looker.do_query_results_match(metricflow_results=mf_results, 
+                                            looker_results=lkr_results):
         sys.exit(1)
 
 if __name__ == '__main__':

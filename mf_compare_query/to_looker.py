@@ -122,13 +122,14 @@ def query_to_looker_query(explore, metrics, group_by=None, order_by=None):
     if not os.getenv("MF_TRANSLATE_LOOKER_MODEL"):
         raise ValueError("MF_TRANSLATE_LOOKER_MODEL environment variable must be set.")
 
-    lkr_fields = [metric_to_looker_measure(metric) for metric in metrics]
+    lkr_fields = []
 
     if group_by:
         for field in group_by:
-            prefix = '-' if field[0] == '-' else ''
-            field = field.replace('-', '')
-            lkr_fields.append(prefix + field_to_looker_dim(field))
+            lkr_fields.append(field_to_looker_dim(field))
+
+    for metric in metrics:
+        lkr_fields.append(metric_to_looker_measure(metric))
 
     if order_by:
         lkr_sorts = []
@@ -164,7 +165,7 @@ def query_looker(explore, metrics, group_by=None, order_by=None, dev_branch=None
     """
 
     lkr_query = query_to_looker_query(explore, metrics, group_by, order_by)
-    logging.info(f"Querying Looker explore: {lkr_query.view}, fields: {', '.join(lkr_query.fields)}")
+    logging.info(f"Querying Looker {lkr_query.view} explore fields: {', '.join(lkr_query.fields)}")
     logging.debug(f"Looker query: {lkr_query}")
 
     sdk = looker_sdk.init40()
@@ -202,12 +203,14 @@ def query_metricflow(metrics, group_by=None, order_by=None, start_time=None, end
 
     # Define the dbt command
     metrics_list = ','.join(metrics)
-    logging.info(f"Querying MetricFlow metrics: {metrics_list}")
     mf_command = f"mf query --metrics {metrics_list} --csv logs/mf_compare_query_results.csv"
 
     if group_by:
       group_by_list = ','.join(group_by)
       mf_command += f" --group-by {group_by_list}"
+      logging.info(f"Querying MetricFlow metrics: {metrics_list}, grouped by: {group_by_list}")
+    else:
+      logging.info(f"Querying MetricFlow metrics: {metrics_list}")
 
     if order_by:
       order_by_list = ','.join(order_by)
@@ -237,33 +240,55 @@ def query_metricflow(metrics, group_by=None, order_by=None, start_time=None, end
     return query_results_df
 
 
-def do_query_results_match(df1, df2):
+def do_query_results_match(metricflow_results, looker_results):
     """
-    Compares two DataFrames and prints the comparison results.
+    Compares two DataFrames by comparing all rows and prints the comparison results.
 
     Parameters:
-    df1 (pandas.DataFrame): The first DataFrame to compare.
-    df2 (pandas.DataFrame): The second DataFrame.
+    metricflow_results (pandas.DataFrame): The first DataFrame to compare.
+    looker_results (pandas.DataFrame): The second DataFrame. Columns order and names should match the first DataFrame.
 
     Returns:
     bool: True if the DataFrames match, False otherwise.
     """
 
-    # Sort the DataFrames by their columns to avoid false negatives due to different row orders
-    df1_sorted = df1.sort_values(by=df1.columns.tolist()).reset_index(drop=True)
-    df2_sorted = df2.sort_values(by=df2.columns.tolist()).reset_index(drop=True)
+    # Fill NaN values with a consistent placeholder
+    metricflow_results_filled = metricflow_results.fillna('<<NULL>>')
+    looker_results_filled = looker_results.fillna('<<NULL>>')
 
-    comparison = df1_sorted.compare(df2_sorted)
+    # Convert DataFrames to sets of tuples representing each row
+    metricflow_set = set(map(tuple, metricflow_results_filled.to_numpy()))
+    looker_set = set(map(tuple, looker_results_filled.to_numpy()))
 
-    if comparison.empty:
-        logging.info("PASS: query results match.")
+    # Find matching rows and rows unique to each DataFrame
+    matching_rows = metricflow_set & looker_set
+    metricflow_only = metricflow_set - looker_set
+    looker_only = looker_set - metricflow_set
+
+    # Log the counts
+    num_matching_rows = len(matching_rows)
+    num_metricflow_only_rows = len(metricflow_only)
+    num_looker_only_rows = len(looker_only)
+
+    logging.info(f"Number of matching rows: {num_matching_rows}")
+    logging.info(f"Number of rows only in MetricFlow: {num_metricflow_only_rows}")
+    logging.info(f"Number of rows only in Looker: {num_looker_only_rows}")
+
+    # Determine if the DataFrames match perfectly
+    if num_metricflow_only_rows == 0 and num_looker_only_rows == 0:
+        logging.info("PASS: query results match perfectly.")
         return True
     else:
-        logging.error("FAIL: query results do not match: -")
+        logging.warning("WARNING: query results do not match exactly.")
 
-        comparison.columns = pd.MultiIndex.from_tuples(
-            [(col[0], 'MetricFlow' if col[1] == 'self' else 'Looker') for col in comparison.columns]
-        )
-        comparison.reset_index(inplace=True)  # Reset index to include it in the tabulate output
-        logging.info(tabulate(comparison, headers='keys', tablefmt='pretty'))
+        if num_metricflow_only_rows > 0:
+            logging.info("Rows only in MetricFlow:")
+            for row in metricflow_only:
+                logging.info(row)
+
+        if num_looker_only_rows > 0:
+            logging.info("Rows only in Looker:")
+            for row in looker_only:
+                logging.info(row)
+
         return False
