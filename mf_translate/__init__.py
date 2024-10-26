@@ -33,7 +33,7 @@ def main():
     if not (args.to_looker_view):
         raise ValueError("Only translations to Looker are supported at the moment. Please include the --to-looker-view flag.")
 
-    result = subprocess.run(['dbt', 'parse'], capture_output=True, text=True)
+    result = subprocess.run(['dbt', 'parse', '--no-partial-parse'], capture_output=True, text=True)
     if result.returncode != 0:
         raise RuntimeError(f"Dbt project could not be parsed: {result.stderr}")
 
