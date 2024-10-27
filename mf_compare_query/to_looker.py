@@ -151,7 +151,7 @@ def query_to_looker_query(explore, metrics, group_by=None, order_by=None):
                                           limit=-1)
 
 
-def query_looker(explore, metrics, group_by=None, order_by=None, dev_branch=None):
+def query_looker(explore, metrics, group_by=None, order_by=None, dev_branch=None, filters=None):
     """
     Queries Looker for the specified metrics, group by and order by fields.
 
@@ -159,12 +159,18 @@ def query_looker(explore, metrics, group_by=None, order_by=None, dev_branch=None
     metrics (list): A list of metric names.
     group_by (list): A list of dimensions to group by (optional).
     order_by (list): A list of fields to order by (optional).
+    dev_branch (str): The development git branch to use when querying Looker (optional).
+    filters (dict): A dictionary of Looker filters (optional). For example, {'orders.revenue': '>100', 'customers.region': 'US'}.
 
     Returns:
     pandas.DataFrame: The query results.
     """
 
     lkr_query = query_to_looker_query(explore, metrics, group_by, order_by)
+    
+    if filters:
+        lkr_query.filters = filters
+
     logging.info(f"Querying Looker {lkr_query.view} explore fields: {', '.join(lkr_query.fields)}")
     logging.debug(f"Looker query: {lkr_query}")
 
@@ -188,7 +194,7 @@ def query_looker(explore, metrics, group_by=None, order_by=None, dev_branch=None
     return query_results_df
 
 
-def query_metricflow(metrics, group_by=None, order_by=None, start_time=None, end_time=None):
+def query_metricflow(metrics, group_by=None, order_by=None, where=None):
     """
     Queries MetricFlow for the specified metrics, group by and order by fields. Creates temporarily file `mf_compare_query_results.csv` to store the query results.
 
@@ -196,6 +202,7 @@ def query_metricflow(metrics, group_by=None, order_by=None, start_time=None, end
     metrics (list): A list of metric names.
     group_by (list): A list of dimensions to group by (optional).
     order_by (list): A list of fields to order by (optional).
+    where (str): A SQL-like where statement provided as a string and wrapped in quotes (optional).
 
     Returns:
     pandas.DataFrame: The query results.
@@ -203,27 +210,33 @@ def query_metricflow(metrics, group_by=None, order_by=None, start_time=None, end
 
     # Define the dbt command
     metrics_list = ','.join(metrics)
-    mf_command = f"mf query --metrics {metrics_list} --csv logs/mf_compare_query_results.csv"
+    mf_command = [
+        "mf", "query",
+        "--metrics", f'{metrics_list}',
+    ]
 
     if group_by:
       group_by_list = ','.join(group_by)
-      mf_command += f" --group-by {group_by_list}"
+      mf_command += ["--group-by", group_by_list]
       logging.info(f"Querying MetricFlow metrics: {metrics_list}, grouped by: {group_by_list}")
     else:
       logging.info(f"Querying MetricFlow metrics: {metrics_list}")
 
     if order_by:
       order_by_list = ','.join(order_by)
-      mf_command += f" --order {order_by_list}"
+      mf_command += ["--order", order_by_list]
 
-    if start_time:
-      mf_command += f" --start-time '{start_time}'"
+    if where:
+        mf_command += ["--where", where]
 
-    if end_time:
-      mf_command += f" --end-time '{end_time}'"
+    mf_command += ["--csv", "logs/mf_compare_query_results.csv"]
+    logging.debug(f"Running command: {mf_command}")
 
-    # Run the dbt command
-    result = subprocess.run(mf_command.split(), capture_output=True, text=True)
+    # Delete the results file if it already exists
+    if os.path.exists('logs/mf_compare_query_results.csv'):
+        os.remove('logs/mf_compare_query_results.csv')
+
+    result = subprocess.run(mf_command, capture_output=True, text=True)
     if result.returncode != 0:
         logging.error(f"Error occurred while executing command: {result.stderr}")
 
