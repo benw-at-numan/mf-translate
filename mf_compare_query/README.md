@@ -11,7 +11,7 @@ Required, defines the LookML .model to be queried. Case-sensitive.
 ```bash
 export MF_TRANSLATE_LOOKER_PROJECT='your_looker_project'
 ```
-Optional, required if including a `--to-looker-dev-branch` argument, see section below. Case-sensitive.
+Optional, required if including a `--looker-dev-branch` argument, see section below. Case-sensitive.
 
 ## Arguments
 ```bash
@@ -23,7 +23,11 @@ Optional, required if including a `--to-looker-dev-branch` argument, see section
 
 --order-by SEQUENCE (optional): A comma-separated list of dimensions or entities to order the results by, e.g., --order-by customer_name,-region. Use - to specify descending order for a dimension.
 
---to-looker-dev-branch BRANCH_NAME (optional): Specify a development branch for Looker comparisons. If not provided, the Looker production environment will be used.
+--where WHERE STRING (optional): SQL-like where statement provided in wrapped quotes: --where "condition_statement" - e.g. --where "{{ Dimension('order_id__revenue') }} > 100 and {{ Dimension('customer_id__region') }}  = 'US'". Note that a corresponding --looker-filters argument must also be provided to apply like for like filtering when comparing against Looker.
+
+--looker-filters FILTER STRING (optional): List of Looker filters wrapped in curly braces and quotes:  --looker-filters "{'orders.revenue': '>100', 'customers.region': 'US'}".
+
+--looker-dev-branch BRANCH_NAME (optional): Specify a development branch for Looker comparisons. If not provided, the Looker production environment will be used.
 
 --log-level LEVEL (optional): Set the logging level for the tool. Available levels are DEBUG, INFO, WARNING, ERROR, CRITICAL. The default is INFO.
  ```

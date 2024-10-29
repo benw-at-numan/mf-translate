@@ -179,7 +179,7 @@ def query_looker(explore, metrics, group_by=None, order_by=None, dev_branch=None
     if dev_branch:
         looker_project = os.getenv("MF_TRANSLATE_LOOKER_PROJECT")
         if not looker_project:
-            raise ValueError("MF_TRANSLATE_LOOKER_PROJECT environment variable must be set when using `--to-looker-dev-branch` option.")
+            raise ValueError("MF_TRANSLATE_LOOKER_PROJECT environment variable must be set when using `--looker-dev-branch` option.")
         sdk.update_session(models40.WriteApiSession(workspace_id='dev'))
         sdk.update_git_branch(project_id=looker_project, body=models40.WriteGitBranch(name=dev_branch))
 

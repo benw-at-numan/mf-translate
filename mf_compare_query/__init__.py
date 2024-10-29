@@ -41,11 +41,11 @@ def main():
     parser.add_argument('--to-looker-explore', type=str, required=False,
                         help='Compare the query results to the specified Looker Explore (rather than inferring the Explore from the --metrics input).')
 
-    parser.add_argument('--to-looker-dev-branch', type=str, required=False,
-                        help='The development git branch to use when querying Looker. If not specified, the production environment will be used. Note that MF_TRANSLATE_LOOKER_PROJECT environment variable must be set.')
-
     parser.add_argument('--looker-filters', type=parse_dict, required=False, metavar='STRING',
                         help='List of Looker filters wrapped in curly braces and quotes:  --looker-filters "{\'orders.revenue\': \'>100\', \'customers.region\': \'US\'}".')
+
+    parser.add_argument('--looker-dev-branch', type=str, required=False,
+                        help='The development git branch to use when querying Looker. If not specified, the production environment will be used. Note that MF_TRANSLATE_LOOKER_PROJECT environment variable must be set.')
 
     parser.add_argument('--log-level', type=str, required=False, default='INFO',
                         help='Set the logging level, options are DEBUG, INFO, WARNING, ERROR, CRITICAL.')
