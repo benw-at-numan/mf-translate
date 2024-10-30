@@ -84,7 +84,7 @@ def main():
     lkr_results = to_looker.query_looker(metrics=args.metrics, group_by=args.group_by, order_by=args.order_by,
                                          filters=args.looker_filters,
                                          explore=args.to_looker_explore,
-                                         dev_branch=args.to_looker_dev_branch)
+                                         dev_branch=args.looker_dev_branch)
     logging.info(f"Looker query returned {lkr_results.shape[0]} rows.")
 
     mf_results.columns = lkr_results.columns # MF does not return column names so overwrite them with Looker's.
