@@ -1,3 +1,4 @@
+import sys
 import re
 import logging
 import os
@@ -323,7 +324,7 @@ def metric_to_lkml_measures(metric, from_model):
         if denominator_metric.get("type") != "simple":
             logging.debug(f"Skipped ratio metric {metric['name']} - non-simple denominator metrics are not supported.")
             return []
-        
+
         custom_lkml_denominator = simple_metric_to_lkml_measure(metric=denominator_metric,
                                                                 from_model=from_model,
                                                                 additional_where_filters=denominator_where_filters + metric_where_filters)
@@ -345,15 +346,20 @@ def metric_to_lkml_measures(metric, from_model):
 
         if metric.get("description"):
             lkml_ratio["description"] = metric["description"]
-            
-        target_warehouse_type = os.getenv("MF_TRANSLATE_TARGET_WAREHOUSE_TYPE").lower()
 
-        if target_warehouse_type == "bigquery":
+        target_warehouse_type = os.getenv("MF_TRANSLATE_TARGET_WAREHOUSE_TYPE")
+        if not target_warehouse_type:
+            logging.error("Warehouse type must be defined to translate ratio metrics. Supported warehouse types are BigQuery, Snowflake and Redshift.")
+            logging.info("Use `export MF_TRANSLATE_TARGET_WAREHOUSE_TYPE=bigquery|snowflake|redshift` to set the target warehouse type.")
+            sys.exit(1)
+
+        if target_warehouse_type.lower() == "bigquery":
             lkml_ratio["sql"] = f"cast(${{{numerator_name}}} as float64) / nullif(${{{denominator_name}}}, 0)"
-        elif target_warehouse_type in ["snowflake", 'redshift']:
+        elif target_warehouse_type.lower() in ["snowflake", 'redshift']:
             lkml_ratio["sql"] = f"${{{numerator_name}}}::double / nullif(${{{denominator_name}}}, 0)"
         else:
-            raise ValueError("MF_TRANSLATE_TARGET_WAREHOUSE_TYPE environment variable must be set to translate ratio metrics. Supported values are 'bigquery', 'snowflake' and 'redshift'.")
+            logging.error(f"Unsupported value for MF_TRANSLATE_TARGET_WAREHOUSE_TYPE: {target_warehouse_type}. Supported values are bigquery, snowflake and redshift.")
+            sys.exit(1)
 
         if custom_lkml_numerator["parent_view"] != custom_lkml_denominator["parent_view"]:
             logging.debug(f"Skipped ratio metric {lkml_ratio['name']} - numerator and denominator from different models not supported.")

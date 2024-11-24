@@ -65,6 +65,7 @@ def main():
                       f"dbt log:---\n{result.stdout.strip()}\n---"
         )
         sys.exit(1)
+    logging.info("...finished parsing project.")
 
     semantic_manifest = {}
     try:

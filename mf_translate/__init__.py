@@ -39,6 +39,7 @@ def main():
                       f"dbt log:---\n{result.stdout.strip()}\n---"
         )
         sys.exit(1)
+    logging.info("...finished parsing project.")
 
     manifest = load_json_file('target/manifest.json')
     semantic_manifest = load_json_file('target/semantic_manifest.json')

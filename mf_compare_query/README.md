@@ -6,12 +6,12 @@
 ```bash
 export MF_TRANSLATE_LOOKER_MODEL='your_looker_model'
 ```
-Required, defines the LookML .model to be queried. Case-sensitive.
+Required, defines the LookML model to be queried. Case-sensitive. See [cloud.google.com/looker/docs/lookml-project-files#model_files](https://cloud.google.com/looker/docs/lookml-project-files#model_files) for more information on Looker models.
 
 ```bash
 export MF_TRANSLATE_LOOKER_PROJECT='your_looker_project'
 ```
-Optional, required if including a `--looker-dev-branch` argument, see section below. Case-sensitive.
+Optional, required if including a `--looker-dev-branch` argument, see section below. Case-sensitive. See [cloud.google.com/looker/docs/lookml-terms-and-concepts#lookml_project](https://cloud.google.com/looker/docs/lookml-terms-and-concepts#lookml_project) for more information on Looker projects.
 
 ## Arguments
 ```bash

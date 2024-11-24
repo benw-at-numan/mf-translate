@@ -1,4 +1,5 @@
 import os
+import sys
 import pandas as pd
 import logging
 from tabulate import tabulate
@@ -119,8 +120,12 @@ def query_to_looker_query(explore, metrics, group_by=None, order_by=None):
     looker_sdk.models40.WriteQuery: The Looker query.
     """
 
-    if not os.getenv("MF_TRANSLATE_LOOKER_MODEL"):
-        raise ValueError("MF_TRANSLATE_LOOKER_MODEL environment variable must be set.")
+    looker_model = os.getenv("MF_TRANSLATE_LOOKER_MODEL")
+    if not looker_model:
+        logging.error("Looker LookML model for comparison is not defined.")
+        logging.info("Use `export MF_TRANSLATE_LOOKER_MODEL=your_looker_model` to set the model.")
+        logging.info("See https://cloud.google.com/looker/docs/lookml-project-files#model_files for more information on Looker models.")
+        sys.exit(1)
 
     lkr_fields = []
 
@@ -144,7 +149,7 @@ def query_to_looker_query(explore, metrics, group_by=None, order_by=None):
     else:
         lkr_sorts = None
 
-    return looker_sdk.models40.WriteQuery(model=os.getenv("MF_TRANSLATE_LOOKER_MODEL"),
+    return looker_sdk.models40.WriteQuery(model=looker_model,
                                           view=explore,
                                           fields=lkr_fields,
                                           sorts=lkr_sorts,
@@ -179,7 +184,10 @@ def query_looker(explore, metrics, group_by=None, order_by=None, dev_branch=None
     if dev_branch:
         looker_project = os.getenv("MF_TRANSLATE_LOOKER_PROJECT")
         if not looker_project:
-            raise ValueError("MF_TRANSLATE_LOOKER_PROJECT environment variable must be set when using `--looker-dev-branch` option.")
+            logging.error("Looker project is not defined - this is required when using the `--looker-dev-branch` option.")
+            logging.info("Use `export MF_TRANSLATE_LOOKER_PROJECT=your_looker_project` to set the project.")
+            logging.info("See https://cloud.google.com/looker/docs/lookml-terms-and-concepts#lookml_project for more information on Looker projects.")
+            sys.exit(1)
         sdk.update_session(models40.WriteApiSession(workspace_id='dev'))
         sdk.update_git_branch(project_id=looker_project, body=models40.WriteGitBranch(name=dev_branch))
 
