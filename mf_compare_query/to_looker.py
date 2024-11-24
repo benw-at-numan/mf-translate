@@ -179,6 +179,14 @@ def query_looker(explore, metrics, group_by=None, order_by=None, dev_branch=None
     logging.info(f"Querying Looker {lkr_query.view} explore fields: {', '.join(lkr_query.fields)}")
     logging.debug(f"Looker query: {lkr_query}")
 
+    if not os.getenv('LOOKERSDK_BASE_URL') and not os.getenv('LOOKERSDK_CLIENT_ID') and not os.getenv('LOOKERSDK_CLIENT_SECRET'):
+        logging.error("Not all Looker API credentials are defined. Use the following commands to set the credentials:-")
+        logging.info("export LOOKERSDK_BASE_URL=your_lookersdk_base_url")
+        logging.info("export LOOKERSDK_CLIENT_ID=your_lookersdk_client_id")
+        logging.info("export LOOKERSDK_CLIENT_SECRET=your_lookersdk_client_secret")
+        logging.info("See https://github.com/looker-open-source/sdk-codegen#environment-variable-configuration for more information on Looker API credentials.")
+        sys.exit(1)
+
     sdk = looker_sdk.init40()
 
     if dev_branch:

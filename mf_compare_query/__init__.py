@@ -33,9 +33,6 @@ def main():
     parser.add_argument('--group-by', type=parse_csv_str, required=False, metavar='SEQUENCE',
                         help='List of dimensions/entities to group by, e.g. --group-by customer_name,region.')
 
-    parser.add_argument('--order-by', type=parse_csv_str, required=False, metavar='SEQUENCE',
-                        help='List of dimensions/entities to order by, e.g. --order-by customer_name,-region.')
-
     parser.add_argument('--where', type=str, required=False, metavar='STRING',
                         help='SQL-like where statement provided as a string and wrapped in quotes: --where "condition_statement" - e.g. --where "{{ Dimension(\'order_id__revenue\') }} > 100 and {{ Dimension(\'customer_id__region\') }}  = \'US\'". Note that a corresponding --looker-filters argument must be provided to apply like for like filtering when comparing against Looker.')
 
@@ -83,10 +80,10 @@ def main():
 
 
     # QUERY METRICFLOW AND LOOKER
-    mf_results = to_looker.query_metricflow(metrics=args.metrics, group_by=args.group_by, order_by=args.order_by,
+    mf_results = to_looker.query_metricflow(metrics=args.metrics, group_by=args.group_by,
                                             where=args.where)
     logging.info(f"MetricFlow query returned {mf_results.shape[0]} rows.")
-    lkr_results = to_looker.query_looker(metrics=args.metrics, group_by=args.group_by, order_by=args.order_by,
+    lkr_results = to_looker.query_looker(metrics=args.metrics, group_by=args.group_by,
                                          filters=args.looker_filters,
                                          explore=args.to_looker_explore,
                                          dev_branch=args.looker_dev_branch)
