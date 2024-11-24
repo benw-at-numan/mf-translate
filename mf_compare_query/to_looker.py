@@ -78,8 +78,6 @@ def field_to_looker_dim(field):
     field_parts = field.split("__")
     entity_name = field_parts[0]
 
-
-
     if len(field_parts) > 1:
         dimension_name = field_parts[1]
 
@@ -107,11 +105,13 @@ def field_to_looker_dim(field):
         return model_for_entity["name"] + "." + entity_name
 
 
-def query_to_looker_query(explore, metrics, group_by=None, order_by=None):
+def query_to_looker_query(looker_model, explore, metrics, group_by=None, order_by=None):
     """
     Converts a MetricFlow query to a Looker query.
 
     Parameters:
+    looker_model (str): The Looker model name.
+    explore (str): The Looker explore name.
     metrics (list): A list of metric names.
     group_by (list): A list of dimensions to group by (optional).
     order_by (list): A list of fields to order by (optional).
@@ -119,13 +119,6 @@ def query_to_looker_query(explore, metrics, group_by=None, order_by=None):
     Returns:
     looker_sdk.models40.WriteQuery: The Looker query.
     """
-
-    looker_model = os.getenv("MF_TRANSLATE_LOOKER_MODEL")
-    if not looker_model:
-        logging.error("Looker LookML model for comparison is not defined.")
-        logging.info("Use `export MF_TRANSLATE_LOOKER_MODEL=your_looker_model` to set the model.")
-        logging.info("See https://cloud.google.com/looker/docs/lookml-project-files#model_files for more information on Looker models.")
-        sys.exit(1)
 
     lkr_fields = []
 
@@ -171,14 +164,7 @@ def query_looker(explore, metrics, group_by=None, order_by=None, dev_branch=None
     pandas.DataFrame: The query results.
     """
 
-    lkr_query = query_to_looker_query(explore, metrics, group_by, order_by)
-    
-    if filters:
-        lkr_query.filters = filters
-
-    logging.info(f"Querying Looker {lkr_query.view} explore fields: {', '.join(lkr_query.fields)}")
-    logging.debug(f"Looker query: {lkr_query}")
-
+    # Check if the Looker API credentials are defined
     if not os.getenv('LOOKERSDK_BASE_URL') and not os.getenv('LOOKERSDK_CLIENT_ID') and not os.getenv('LOOKERSDK_CLIENT_SECRET'):
         logging.error("Not all Looker API credentials are defined. Use the following commands to set the credentials:-")
         logging.info("export LOOKERSDK_BASE_URL=your_lookersdk_base_url")
@@ -189,6 +175,7 @@ def query_looker(explore, metrics, group_by=None, order_by=None, dev_branch=None
 
     sdk = looker_sdk.init40()
 
+    # Update the Looker dev branch if specified
     if dev_branch:
         looker_project = os.getenv("MF_TRANSLATE_LOOKER_PROJECT")
         if not looker_project:
@@ -196,11 +183,57 @@ def query_looker(explore, metrics, group_by=None, order_by=None, dev_branch=None
             logging.info("Use `export MF_TRANSLATE_LOOKER_PROJECT=your_looker_project` to set the project.")
             logging.info("See https://cloud.google.com/looker/docs/lookml-terms-and-concepts#lookml_project for more information on Looker projects.")
             sys.exit(1)
-        sdk.update_session(models40.WriteApiSession(workspace_id='dev'))
-        sdk.update_git_branch(project_id=looker_project, body=models40.WriteGitBranch(name=dev_branch))
+        try:
+            sdk.update_session(models40.WriteApiSession(workspace_id='dev'))
+            sdk.update_git_branch(project_id=looker_project, body=models40.WriteGitBranch(name=dev_branch))
+        except looker_sdk.error.SDKError as e:
+            error_message = getattr(e, 'message', 'No error message provided')
+            logging.error(f"Looker dev branch could not be updated.\n"
+                          f"Looker error:---\n{error_message}\n---"
+            )
+            sys.exit(1)
 
+    # Retrieve the Looker model
+    looker_model = os.getenv("MF_TRANSLATE_LOOKER_MODEL")
+    if not looker_model:
+        logging.error("Looker LookML model for comparison is not defined.")
+        logging.info("Use `export MF_TRANSLATE_LOOKER_MODEL=your_looker_model` to set the model.")
+        logging.info("See https://cloud.google.com/looker/docs/lookml-project-files#model_files for more information on Looker models.")
+        sys.exit(1)
 
-    response = sdk.run_inline_query("csv", lkr_query)
+    # Define the Looker query
+    lkr_query = query_to_looker_query(looker_model, explore, metrics, group_by, order_by)
+    
+    if filters:
+        lkr_query.filters = filters
+
+    logging.info(f"Querying Looker {lkr_query.view} explore fields: {', '.join(lkr_query.fields)}")
+    logging.debug(f"Looker query: {lkr_query}")
+
+    # Check if query fields are valid
+    try:
+        explore_metadata = sdk.lookml_model_explore(lookml_model_name=looker_model, explore_name=explore)
+        valid_fields = {field.name for field in explore_metadata.fields.dimensions + explore_metadata.fields.measures}
+        invalid_fields = []
+        for field in lkr_query.fields:
+            if field not in valid_fields:
+                invalid_fields.append(field)
+        if invalid_fields:
+            logging.error(f"Invalid Looker fields detected: {', '.join(invalid_fields)}")
+            sys.exit(1)
+    except looker_sdk.error.SDKError as e:
+        logging.info(f"Looker error:---\n{getattr(e, 'message', 'No error message provided')}\n---\n")
+        logging.error(f"Failed to fetch `{explore}` explore's metadata from model `{looker_model}`.\n")
+        sys.exit(1)
+
+    # Run the Looker query
+    try:
+        response = sdk.run_inline_query("csv", lkr_query)
+    except looker_sdk.error.SDKError as e:
+        logging.error(f"Looker could not be queried.\n"
+                      f"Looker error:---\n{getattr(e, 'message', 'No error message provided')}\n---"
+        )
+        sys.exit(1)
 
     query_results_df = pd.read_csv(StringIO(response))
 
@@ -254,7 +287,10 @@ def query_metricflow(metrics, group_by=None, order_by=None, where=None):
 
     result = subprocess.run(mf_command, capture_output=True, text=True)
     if result.returncode != 0:
-        logging.error(f"Error occurred while executing command: {result.stderr}")
+        logging.error(f"MetricFlow could not be queried.\n"
+                      f"MetricFlow log:---\n{result.stdout.strip()}\n---"
+        )
+        sys.exit(1)
 
     # Load the CSV file into a DataFrame
     query_results_df = pd.read_csv(f'logs/mf_compare_query_results.csv', header=None)

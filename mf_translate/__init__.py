@@ -58,5 +58,7 @@ def main():
         lkml_view = to_looker.model_to_lkml_view(model=model_dict[args.model], view_name=args.to_looker_view)
         print(lkml.dump({'views': [lkml_view]}))
 
+        logging.info(f"Translated {args.model} semantic model to LookML view {args.to_looker_view}.")
+
 if __name__ == '__main__':
     main()
