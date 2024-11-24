@@ -46,5 +46,3 @@ Currently only Looker is supported as a translation destination but there is pot
 | cumulative  |        |          |           |
 | conversion  |        |          |           |
 
-Note that only metrics which depend on measures from the same semantic model can be translated to Looker (the same is true for Cube.dev and Lightdash).
-
