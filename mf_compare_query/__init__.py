@@ -19,7 +19,8 @@ def parse_dict(dict_string):
     try:
         return ast.literal_eval(dict_string)
     except (SyntaxError, ValueError):
-        raise argparse.ArgumentTypeError("Invalid format for dictionary string. Example: \"{'orders.revenue': '>100', 'customers.region': 'US'}\"")
+        logging.error("Invalid format for dictionary string. Example: \"{'orders.revenue': '>100', 'customers.region': 'US'}\"")
+        sys.exit(1)
 
 def main():
 
@@ -38,7 +39,7 @@ def main():
     parser.add_argument('--where', type=str, required=False, metavar='STRING',
                         help='SQL-like where statement provided as a string and wrapped in quotes: --where "condition_statement" - e.g. --where "{{ Dimension(\'order_id__revenue\') }} > 100 and {{ Dimension(\'customer_id__region\') }}  = \'US\'". Note that a corresponding --looker-filters argument must be provided to apply like for like filtering when comparing against Looker.')
 
-    parser.add_argument('--to-looker-explore', type=str, required=False,
+    parser.add_argument('--to-looker-explore', type=str, required=True,
                         help='Compare the query results to the specified Looker Explore (rather than inferring the Explore from the --metrics input).')
 
     parser.add_argument('--looker-filters', type=parse_dict, required=False, metavar='STRING',
@@ -52,26 +53,29 @@ def main():
 
     args = parser.parse_args()
 
-    if not (args.to_looker_explore):
-        raise ValueError("Only comparisons to Looker are supported at the moment.")
-
     if args.log_level:
         logging.getLogger().setLevel(args.log_level)
 
 
     # PARSE DBT PROJECT
+    logging.info("Parsing dbt project...")
     result = subprocess.run(['dbt', 'parse'], capture_output=True, text=True)
     if result.returncode != 0:
-        print(f"Error occurred whilst parsing DBT project: {result.stderr}")
+        logging.error(f"Project could not be parsed.\n"
+                      f"dbt log:---\n{result.stdout.strip()}\n---"
+        )
+        sys.exit(1)
 
     semantic_manifest = {}
     try:
         with open(f'target/semantic_manifest.json') as f:
             semantic_manifest = json.load(f)
     except FileNotFoundError:
-        raise FileNotFoundError(f"The file {f'target/semantic_manifest.json'} does not exist.")
+        logging.error(f"The file {f'target/semantic_manifest.json'} does not exist.")
+        sys.exit(1)
     except json.JSONDecodeError:
-        raise ValueError(f"The file {f'target/semantic_manifest.json'} is not a valid JSON file.")
+        logging.error(f"The file {f'target/semantic_manifest.json'} is not a valid JSON file.")
+        sys.exit(1)
 
     to_looker.set_semantic_manifest(semantic_manifest)
     logging.debug(f"Parsed dbt project.")
