@@ -47,6 +47,12 @@ def main():
     model_dict = {model['name']: model for model in semantic_manifest['semantic_models']}
 
     if args.to_looker_view:
+
+        semantic_model = model_dict.get(args.model)
+        if not semantic_model:
+            logging.error(f"Model `{args.model}` not found in target/semantic_manifest.json.")
+            sys.exit(1)
+
         to_looker.set_manifests(metricflow_semantic_manifest=semantic_manifest,
                                 dbt_manifest=manifest)
         lkml_view = to_looker.model_to_lkml_view(model=model_dict[args.model], view_name=args.to_looker_view)
