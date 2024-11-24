@@ -203,11 +203,13 @@ def query_looker(explore, metrics, group_by=None, order_by=None, dev_branch=None
 
     # Define the Looker query
     lkr_query = query_to_looker_query(looker_model, explore, metrics, group_by, order_by)
+    query_description = f"Querying Looker {lkr_query.view} explore fields: {', '.join(lkr_query.fields)}"
     
     if filters:
         lkr_query.filters = filters
+        query_description += f", filters: {filters}"
 
-    logging.info(f"Querying Looker {lkr_query.view} explore fields: {', '.join(lkr_query.fields)}")
+    logging.info(query_description)
     logging.debug(f"Looker query: {lkr_query}")
 
     # Check if query fields are valid
@@ -263,20 +265,23 @@ def query_metricflow(metrics, group_by=None, order_by=None, where=None):
         "mf", "query",
         "--metrics", f'{metrics_list}',
     ]
+    query_description = f"Querying MetricFlow metrics: {metrics_list}"
 
     if group_by:
       group_by_list = ','.join(group_by)
       mf_command += ["--group-by", group_by_list]
-      logging.info(f"Querying MetricFlow metrics: {metrics_list}, grouped by: {group_by_list}")
-    else:
-      logging.info(f"Querying MetricFlow metrics: {metrics_list}")
+      query_description += f", grouped by: {group_by_list}"
 
     if order_by:
       order_by_list = ','.join(order_by)
       mf_command += ["--order", order_by_list]
+      query_description += f", ordered by: {order_by_list}"
 
     if where:
         mf_command += ["--where", where]
+        query_description += f", where: {where}"
+
+    logging.info(query_description)
 
     mf_command += ["--csv", "logs/mf_compare_query_results.csv"]
     logging.debug(f"Running command: {mf_command}")
@@ -293,7 +298,11 @@ def query_metricflow(metrics, group_by=None, order_by=None, where=None):
         sys.exit(1)
 
     # Load the CSV file into a DataFrame
-    query_results_df = pd.read_csv(f'logs/mf_compare_query_results.csv', header=None)
+    try:
+        query_results_df = pd.read_csv(f'logs/mf_compare_query_results.csv', header=None)
+    except FileNotFoundError as e:
+        logging.error(f"MetricFlow query returned no results.")
+        sys.exit(1)
 
     # Add column_1, column_2, etc column headers
     num_columns = query_results_df.shape[1]
