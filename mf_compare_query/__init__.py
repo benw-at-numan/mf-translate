@@ -34,7 +34,7 @@ def main():
                         help='List of dimensions/entities to group by, e.g. --group-by customer_name,region.')
 
     parser.add_argument('--where', type=str, required=False, metavar='STRING',
-                        help='SQL-like where statement provided as a string and wrapped in quotes: --where "condition_statement" - e.g. --where "{{ Dimension(\'order_id__revenue\') }} > 100 and {{ Dimension(\'customer_id__region\') }}  = \'US\'". Note that a corresponding --looker-filters argument must be provided to apply like for like filtering when comparing against Looker.')
+                        help='SQL-like where statement provided as a string and wrapped in quotes: --where "condition_statement" - e.g. --where "{{ Dimension(\'order_id__revenue\') }} > 100 and {{ Dimension(\'customer_id__region\') }}  = \'US\'". Note that a corresponding `--looker-filters` argument must be provided to apply like for like filtering when comparing against Looker.')
 
     parser.add_argument('--to-looker-explore', type=str, required=True,
                         help='Compare the query results to the specified Looker Explore (rather than inferring the Explore from the --metrics input).')
