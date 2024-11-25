@@ -48,7 +48,6 @@ def sql_expression_to_lkml(expression, from_model):
 
         # Pattern to match words in a string but treat {{...}} strings as a single word
         unqualified_field_pattern = r"{{.*?}}|\b\w+\b"
-        
         def translate_unqualified_field(match):
             if match.group(0) in node_columns:
                 return f"${{TABLE}}.{match.group(0)}"
