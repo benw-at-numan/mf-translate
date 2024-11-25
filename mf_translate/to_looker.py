@@ -46,9 +46,8 @@ def sql_expression_to_lkml(expression, from_model):
         node_for_model = node_dict[from_model['node_relation']['relation_name']]
         node_columns  = node_for_model['columns'].keys()
 
-        # Pattern to match unqualified fields (words) not in {{ Dimension('...') }}
-        unqualified_field_pattern = r"\b(?!\{\{ Dimension\(')\w+\b"
-
+        # Pattern to match words in a string but treat {{...}} strings as a single word
+        unqualified_field_pattern = r"{{.*?}}|\b\w+\b"
         def translate_unqualified_field(match):
             if match.group(0) in node_columns:
                 return f"${{TABLE}}.{match.group(0)}"
@@ -56,7 +55,6 @@ def sql_expression_to_lkml(expression, from_model):
                 return match.group(0)
 
         expression = re.sub(unqualified_field_pattern, translate_unqualified_field, expression)
-
 
     # Step 2: Replace {{ Dimension('entity__dimension') }} with ${model.dimension}
     dim_ref_pattern = r"\{\{\s*Dimension\s*\(\s*'([^']+?)'\s*\)\s*\}\}"
@@ -82,8 +80,14 @@ def sql_expression_to_lkml(expression, from_model):
         else:
             return "${" + f"{model_for_dimension['name']}.{dimension_name}" + "}"
 
+    expression = re.sub(dim_ref_pattern, translate_dim_ref, expression.strip())
 
-    return re.sub(dim_ref_pattern, translate_dim_ref, expression.strip())
+    # Step 3: Replace {{ Entity('entity') }} with ${entity}
+    entity_pattern = r"\{\{\s*Entity\s*\(\s*'([^']+?)'\s*\)\s*\}\}"
+    expression = re.sub(entity_pattern, r"${\1}", expression)
+
+    return expression
+
 
 def entity_to_lkml(entity, from_model):
     """
