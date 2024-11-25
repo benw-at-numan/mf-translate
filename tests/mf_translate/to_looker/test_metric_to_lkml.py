@@ -24,7 +24,7 @@ def test_filter_expression(monkeypatch):
 
     monkeypatch.setattr(to_looker, "SEMANTIC_MODELS", [deliveries_model])
 
-    mf_filter = "{{Dimension('delivery__delivery_rating')}} = 5"
+    mf_filter = "{{ Dimension('delivery__delivery_rating') }} = 5"
     lkml_filter = to_looker.sql_expression_to_lkml(expression=mf_filter,
                                                    from_model=deliveries_model)
 
@@ -173,12 +173,27 @@ def test_entity_filter_expression(monkeypatch):
                 "type": "foreign"
             }
         ],
-        "dimensions": []
+        "dimensions": [],
+        "node_relation": {
+            "relation_name": "`mf_translate_db`.`jaffle_shop`.`orders`"
+        }
     }
 
     monkeypatch.setattr(to_looker, "SEMANTIC_MODELS", [orders_model])
 
-    mf_filter = "{{ Entity( 'discount_id' ) }} is not null"
+    nodes = {
+        "model.jaffle_shop.orders": {
+            "columns": {
+                "order_id": {},
+                "discount_id": {}
+            },
+            "relation_name": "`mf_translate_db`.`jaffle_shop`.`orders`"
+        }
+    }
+
+    monkeypatch.setattr(to_looker, 'DBT_NODES', nodes)
+
+    mf_filter = "{{ Entity('discount_id' ) }} is not null"
     lkml_filter = to_looker.sql_expression_to_lkml(expression=mf_filter,
                                                     from_model=orders_model)
 
