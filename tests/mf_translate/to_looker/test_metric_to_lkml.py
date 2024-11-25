@@ -158,6 +158,32 @@ def test_foreign_filter_expression_for_duplicated_entity_id(monkeypatch):
 
     assert lkml_filter == "${orders.discount_code} = 'STAFF'"
 
+def test_entity_filter_expression(monkeypatch):
+
+    orders_model = {
+        "name": "orders",
+        "entities": [
+            {
+                "name": "order_id",
+                "type": "primary",
+                "expr": "order_id"
+            },
+            {
+                "name": "discount_id",
+                "type": "foreign"
+            }
+        ],
+        "dimensions": []
+    }
+
+    monkeypatch.setattr(to_looker, "SEMANTIC_MODELS", [orders_model])
+
+    mf_filter = "{{ Entity( 'discount_id' ) }} is not null"
+    lkml_filter = to_looker.sql_expression_to_lkml(expression=mf_filter,
+                                                    from_model=orders_model)
+
+    assert lkml_filter == "${discount_id} is not null"
+
 def test_calculation_expression(monkeypatch):
 
     orders_model = {
