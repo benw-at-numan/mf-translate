@@ -114,50 +114,7 @@ def test_category_dim_with_expr(monkeypatch):
     assert cube_is_bulk_transaction["sql"] == "(case when {CUBE}.quantity > 10 then true else false end)"
 
 
-def test_time_dimension_without_timezone(monkeypatch):
-
-    created_at = {
-        "name": "created_at",
-        "type": "time",
-        "label": "Time of creation",
-        "description": "Time of creation, without timezone",
-        "expr": "ts_created",
-        "type_params": {
-            "time_granularity": "day"
-        }
-    }
-
-    nodes = {
-        "model.jaffle_shop.orders": {
-            "columns": {
-                "order_id": {},
-                "ts_created": {}
-            },
-            "relation_name": "`mf_translate_db`.`jaffle_shop`.`orders`"
-        }
-    }
-
-    monkeypatch.setattr(to_cube, 'DBT_NODES', nodes)
-
-    orders_model = {
-        "name": "orders",
-        "node_relation": {
-            "relation_name": "`mf_translate_db`.`jaffle_shop`.`orders`"
-        }
-    }
-
-    cube_created_at = to_cube.dimension_to_cube(dim=created_at,
-                                                from_model=orders_model)
-
-    assert cube_created_at["name"] == "created_at"
-    assert cube_created_at["type"] == "time"
-    assert cube_created_at["title"] == "Time of creation"
-    assert "label" not in cube_created_at
-    assert cube_created_at["description"] == "Time of creation, without timezone"
-    assert cube_created_at["sql"] == "{CUBE}.ts_created"
-
-
-def test_time_dimension_with_timezone(monkeypatch):
+def test_time_dimension(monkeypatch):
 
     created_at = {
         "name": "created_at",
@@ -190,7 +147,7 @@ def test_time_dimension_with_timezone(monkeypatch):
     }
 
     monkeypatch.setenv('MF_TRANSLATE_TARGET_WAREHOUSE_TYPE', 'BigQuery')
-    monkeypatch.setenv('MF_TRANSLATE_CUBE_TIMEZONE_FOR_TIME_DIMENSIONS', 'America/Los_Angeles')
+    monkeypatch.setenv('MF_TRANSLATE_CUBE_TIME_DIMENSION_TIMEZONE', 'America/Los_Angeles')
 
     cube_created_at = to_cube.dimension_to_cube(dim=created_at,
                                                 from_model=orders_model)
@@ -203,7 +160,7 @@ def test_time_dimension_with_timezone(monkeypatch):
     assert cube_created_at["sql"] == "TIMESTAMP({CUBE}.ts_created, 'America/Los_Angeles')"
 
 
-def test_time_dimension_with_timezone_2(monkeypatch):
+def test_time_dimension_2(monkeypatch):
 
     created_at = {
         "name": "created_at",
@@ -231,7 +188,7 @@ def test_time_dimension_with_timezone_2(monkeypatch):
     }
 
     monkeypatch.setenv('MF_TRANSLATE_TARGET_WAREHOUSE_TYPE', 'sNowflake')
-    monkeypatch.setenv('MF_TRANSLATE_CUBE_TIMEZONE_FOR_TIME_DIMENSIONS', 'America/Los_Angeles')
+    monkeypatch.setenv('MF_TRANSLATE_CUBE_TIME_DIMENSION_TIMEZONE', 'America/Los_Angeles')
 
     cube_created_at = to_cube.dimension_to_cube(dim=created_at,
                                                 from_model=orders_model)

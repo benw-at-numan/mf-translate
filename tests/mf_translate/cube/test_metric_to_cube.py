@@ -250,10 +250,10 @@ def test_simple_metric_with_unsupported_aggregation(monkeypatch, caplog):
 
     monkeypatch.setattr(to_cube, "DBT_NODES", nodes)
 
-    with caplog.at_level(logging.WARNING):
+    with caplog.at_level(logging.DEBUG):
         cube_measures = to_cube.metric_to_cube_measures(metric=median_delivery_time, from_model=deliveries_model)
 
-    assert any(record.levelname == 'WARNING'
+    assert any(record.levelname == 'DEBUG'
                 and "median aggregations are not supported." in record.message for record in caplog.records)
 
     assert len(cube_measures) == 0
@@ -772,10 +772,10 @@ def test_ratio_metric_with_non_simple_numerator(monkeypatch, caplog):
     monkeypatch.setattr(to_cube, "SEMANTIC_MODELS", [orders_model])
     monkeypatch.setattr(to_cube, "METRICS", [revenue, cumulative_revenue, pc_revenue_of_total])
 
-    with caplog.at_level(logging.WARNING):
+    with caplog.at_level(logging.DEBUG):
         cube_measures = to_cube.metric_to_cube_measures(metric=pc_revenue_of_total, from_model=orders_model)
 
-    assert any(record.levelname == 'WARNING'
+    assert any(record.levelname == 'DEBUG'
                 and "non-simple denominator metrics are not supported." in record.message for record in caplog.records)
     
     assert len(cube_measures) == 0
@@ -863,10 +863,10 @@ def test_ratio_metric_with_numerator_and_denominator_from_different_models(monke
     monkeypatch.setattr(to_cube, "SEMANTIC_MODELS", [deliveries_model, orders_model])
     monkeypatch.setattr(to_cube, "METRICS", [delivery_count, revenue, revenue_per_delivery])
 
-    with caplog.at_level(logging.WARNING):
+    with caplog.at_level(logging.DEBUG):
         cube_measures = to_cube.metric_to_cube_measures(metric=revenue_per_delivery, from_model=deliveries_model)
 
-    assert any(record.levelname == 'WARNING'
+    assert any(record.levelname == 'DEBUG'
                 and "numerator and denominator from different models not supported." in record.message for record in caplog.records)
     
     assert len(cube_measures) == 0

@@ -76,7 +76,7 @@ def main():
         to_cube.set_manifests(metricflow_semantic_manifest=semantic_manifest,
                               dbt_manifest=manifest)
         cube = to_cube.model_to_cube_cube(model=model_dict[args.model], cube_name=args.to_cube_cube)
-        print(YAML().dump({"cubes": [cube]}, sys.stdout))
+        YAML().dump({"cubes": [cube]}, sys.stdout)
 
         logging.info(f"Translated {args.model} semantic model to Cube cube {args.to_cube_cube}.")
 
