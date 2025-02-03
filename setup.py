@@ -10,6 +10,7 @@ setup(
         'tabulate>=0.9.0,<1.0.0',
         'looker-sdk>=23.0.0,<25.0.0',
         'lkml>=1.3.0,<1.4.0',
+        'ruamel.yaml>=0.18.0,<0.19.0'
     ],
     entry_points={
         'console_scripts': [

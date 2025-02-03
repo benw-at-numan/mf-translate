@@ -319,13 +319,13 @@ def metric_to_cube_measures(metric, from_model):
         return [cube_numerator, cube_denominator, cube_ratio]
 
 
-def model_to_cube_cube(model):
+def model_to_cube_cube(model, cube_name=None):
     """
     Translates a MetricFlow model to a Cube.dev cube.
     """
 
     cube = {
-        "name": model['name'],
+        "name": cube_name or model['name'],
         "sql_table": model["node_relation"]["relation_name"],
         "dimensions": [],
         "measures": []
