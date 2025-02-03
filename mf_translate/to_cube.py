@@ -126,16 +126,16 @@ def add_parentheses_to_sql(sql):
 
 def set_timezone_for_time_dimension(time_dimension_sql):
     """
-    Helper function for converting a time dimension SQL expression to a timezone-aware SQL expression. The timezone is set by the MF_TRANSLATE_CUBE_TIME_DIMENSION_TIMEZONE environment variable.
+    Helper function for converting a time dimension SQL expression to a timezone-aware SQL expression. The timezone is set by the MF_TRANSLATE_DATABASE_TIMEZONE environment variable.
 
     Cube requires a timestamp whereas DBT wants a datetime:
          - https://cube.dev/docs/guides/recipes/data-modeling/string-time-dimensions
          - https://github.com/dbt-labs/metricflow/issues/733
     """
 
-    timezone = os.getenv("MF_TRANSLATE_CUBE_TIME_DIMENSION_TIMEZONE")
+    timezone = os.getenv("MF_TRANSLATE_DATABASE_TIMEZONE")
     if not timezone:
-        logging.error("A timezone must be defined to translate time dimensions to Cube. Use `export MF_TRANSLATE_CUBE_TIME_DIMENSION_TIMEZONE=...` to set the timezone.")
+        logging.error("A timezone must be defined to translate time dimensions to Cube. Use `export MF_TRANSLATE_DATABASE_TIMEZONE=...` to set the timezone.")
         sys.exit(1)
 
     target_warehouse_type = os.getenv("MF_TRANSLATE_TARGET_WAREHOUSE_TYPE")

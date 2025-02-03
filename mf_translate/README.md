@@ -9,9 +9,11 @@ export MF_TRANSLATE_TARGET_WAREHOUSE_TYPE='snowflake'
 Required, defines the warehouse type which the translated semantic model definitions will run against. Supported values are `snowflake`, `redshift` and `bigquery`.
 
 ```bash
-export MF_TRANSLATE_CUBE_TIME_DIMENSION_TIMEZONE='UTC'
+export MF_TRANSLATE_DATABASE_TIMEZONE='UTC'
 ```
-Required for translations to Cube. Describes the timezone of timestamps from the source database (typically UTC). This is needed because Cube always expects a timezoned timestamp whereas the DBT semantic layer works with datetimes without timezones.
+Required for translations to Cube. Describes the timezone which the source database stores timestamps in (typically UTC). This is used to provide Cube with a timezoned timestamp - whereas MetricFlow works datetimes without timezones. More information here: -
+ - https://cube.dev/docs/guides/recipes/data-modeling/string-time-dimensions
+ - https://github.com/dbt-labs/metricflow/issues/733
 
 ## Arguments
 ```bash
