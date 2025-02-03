@@ -1,6 +1,7 @@
 import re
 import os
 import logging
+import sys
 
 SEMANTIC_MODELS = [] # Used in sql_expression_to_cube()
 METRICS = []
@@ -125,23 +126,30 @@ def add_parentheses_to_sql(sql):
 
 def set_timezone_for_time_dimension(time_dimension_sql):
     """
-    Helper function for converting a time dimension SQL expression to a timezone-aware SQL expression. The timezone is set by the MF_TRANSLATE_CUBE_TIMEZONE_FOR_TIME_DIMENSIONS environment variable.
+    Helper function for converting a time dimension SQL expression to a timezone-aware SQL expression. The timezone is set by the MF_TRANSLATE_DATABASE_TIMEZONE environment variable.
 
     Cube requires a timestamp whereas DBT wants a datetime:
          - https://cube.dev/docs/guides/recipes/data-modeling/string-time-dimensions
          - https://github.com/dbt-labs/metricflow/issues/733
     """
 
-    timezone = os.getenv("MF_TRANSLATE_CUBE_TIMEZONE_FOR_TIME_DIMENSIONS")
+    timezone = os.getenv("MF_TRANSLATE_DATABASE_TIMEZONE")
+    if not timezone:
+        logging.error("A timezone must be defined to translate time dimensions to Cube. Use `export MF_TRANSLATE_DATABASE_TIMEZONE=...` to set the timezone.")
+        sys.exit(1)
 
-    if timezone:
+    target_warehouse_type = os.getenv("MF_TRANSLATE_TARGET_WAREHOUSE_TYPE")
+    if target_warehouse_type.lower() not in ["bigquery", "snowflake", "redshift"]:
+            logging.error("Warehouse type must be defined to translate time dimensions to Cube. Supported warehouse types are BigQuery, Snowflake and Redshift.")
+            logging.info("Use `export MF_TRANSLATE_TARGET_WAREHOUSE_TYPE=bigquery|snowflake|redshift` to set the target warehouse type.")
+            sys.exit(1)
 
-        target_warehouse_type = os.getenv("MF_TRANSLATE_TARGET_WAREHOUSE_TYPE")
-
-        if target_warehouse_type.lower() == "bigquery":
-            return f"TIMESTAMP({time_dimension_sql}, '{timezone}')"
-        elif target_warehouse_type.lower() == "snowflake":
-            return f"CONVERT_TIMEZONE('{timezone}', {time_dimension_sql})"
+    if target_warehouse_type.lower() == "bigquery":
+        return f"TIMESTAMP({time_dimension_sql}, '{timezone}')"
+    elif target_warehouse_type.lower() == "snowflake":
+        return f"CONVERT_TIMEZONE('{timezone}', {time_dimension_sql})"
+    elif target_warehouse_type.lower() == "redshift":
+        return f"CONVERT_TIMEZONE('UTC', '{timezone}', {time_dimension_sql})"
 
     return add_parentheses_to_sql(time_dimension_sql)
 
@@ -211,7 +219,7 @@ def simple_metric_to_cube_measure(metric, from_model, additional_where_filters=[
     elif measure['agg'] == 'average':
         cube_measure["type"] = 'avg'
     else:
-        logging.warning(f"Skipped {metric['name']} - {measure['agg']} aggregations are not supported.")
+        logging.debug(f"Skipped {metric['name']} - {measure['agg']} aggregations are not supported.")
         return None
 
     sql = sql_expression_to_cube(measure.get("expr") or measure["name"], from_model)
@@ -243,7 +251,7 @@ def metric_to_cube_measures(metric, from_model):
     """
 
     if metric["type"] in ["conversion", "cumulative", "derived"]:
-        logging.warning(f"Skipped {metric['name']} - {metric['type']} metrics are not yet supported.")
+        # logging.debug(f"Skipped {metric['name']} - {metric['type']} metrics are not yet supported.")
         return []
 
     elif metric["type"] == "simple":
@@ -258,7 +266,6 @@ def metric_to_cube_measures(metric, from_model):
         if metric.get("description") != f"Metric created from measure {metric['name']}":
             cube_measure["description"] = metric["description"]
 
-        logging.info(f"Translated simple metric {cube_measure['name']}.")
         return [cube_measure]
 
     elif metric["type"] == "ratio":
@@ -272,7 +279,7 @@ def metric_to_cube_measures(metric, from_model):
         numerator_metric = metrics_dict[numerator_params["name"]]
 
         if numerator_metric.get("type") != "simple":
-            logging.warning(f"Skipped ratio metric {metric['name']} - non-simple numerator metrics are not supported.")
+            logging.debug(f"Skipped ratio metric {metric['name']} - non-simple numerator metrics are not supported.")
             return []
 
         cube_numerator = simple_metric_to_cube_measure(metric=numerator_metric,
@@ -287,7 +294,7 @@ def metric_to_cube_measures(metric, from_model):
         denominator_metric = metrics_dict[denominator_params["name"]]
 
         if denominator_metric.get("type") != "simple":
-            logging.warning(f"Skipped ratio metric {metric['name']} - non-simple denominator metrics are not supported.")
+            logging.debug(f"Skipped ratio metric {metric['name']} - non-simple denominator metrics are not supported.")
             return []
 
         cube_denominator = simple_metric_to_cube_measure(metric=denominator_metric,
@@ -310,22 +317,21 @@ def metric_to_cube_measures(metric, from_model):
         cube_ratio["sql"] = f"{{{cube_numerator['name']}}} / nullif({{{cube_denominator['name']}}}, 0)"
 
         if cube_numerator["parent_view"] != cube_denominator["parent_view"]:
-            logging.warning(f"Skipped ratio metric {cube_ratio['name']} - numerator and denominator from different models not supported.")
+            logging.debug(f"Skipped ratio metric {cube_ratio['name']} - numerator and denominator from different models not supported.")
             return []
 
         cube_ratio["parent_view"] = cube_numerator["parent_view"]
 
-        logging.info(f"Translated ratio metric {cube_ratio['name']}.")
         return [cube_numerator, cube_denominator, cube_ratio]
 
 
-def model_to_cube_cube(model):
+def model_to_cube_cube(model, cube_name=None):
     """
     Translates a MetricFlow model to a Cube.dev cube.
     """
 
     cube = {
-        "name": model['name'],
+        "name": cube_name or model['name'],
         "sql_table": model["node_relation"]["relation_name"],
         "dimensions": [],
         "measures": []
@@ -344,7 +350,8 @@ def model_to_cube_cube(model):
         cube_measures = metric_to_cube_measures(metric, model)
 
         for cube_measure in cube_measures:
-            if cube_measure['parent_view'] == cube['name']:
+
+            if cube_measure['parent_view'] == model['name']:
                 del cube_measure['parent_view']
                 cube['measures'].append(cube_measure)
 

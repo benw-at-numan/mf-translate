@@ -1,0 +1,10 @@
+- mf-translate --to-cube-cube deliveries_base \
+               --model deliveries \
+               > ../cube/cubes/deliveries_base.yml
+
+- mf-compare-query --to-cube \
+                   --metrics pc_caregivers_with_geo_coordinates \
+                   --group-by agency_id
+
+- CI checks
+- CD checks
