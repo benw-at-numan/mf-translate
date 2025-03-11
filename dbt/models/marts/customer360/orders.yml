@@ -118,6 +118,8 @@ semantic_models:
           time_granularity: day
       - name: ordered_at_test
         expr: ordered_at
+        type_params:
+          time_granularity: day
         type: time
       - name: discount_code
         type: categorical
