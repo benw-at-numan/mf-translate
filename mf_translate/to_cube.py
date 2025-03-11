@@ -335,6 +335,7 @@ def model_to_cube_cube(model):
         cube_dim = entity_to_cube(entity, model)
         cube['dimensions'].append(cube_dim)
 
+
     for dim in model['dimensions']:
         cube_dim = dimension_to_cube(dim, model)
         cube['dimensions'].append(cube_dim)
