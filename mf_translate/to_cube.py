@@ -18,6 +18,7 @@ def set_manifests(metricflow_semantic_manifest, dbt_manifest):
     global METRICS
     global DBT_NODES
 
+
     SEMANTIC_MODELS = metricflow_semantic_manifest.get('semantic_models', [])
     METRICS = metricflow_semantic_manifest.get('metrics', [])
     DBT_NODES = dbt_manifest.get('nodes', [])
