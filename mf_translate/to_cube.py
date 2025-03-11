@@ -18,6 +18,7 @@ def set_manifests(metricflow_semantic_manifest, dbt_manifest):
     global METRICS
     global DBT_NODES
 
+
     SEMANTIC_MODELS = metricflow_semantic_manifest.get('semantic_models', [])
     METRICS = metricflow_semantic_manifest.get('metrics', [])
     DBT_NODES = dbt_manifest.get('nodes', [])
@@ -334,6 +335,7 @@ def model_to_cube_cube(model):
     for entity in model['entities']:
         cube_dim = entity_to_cube(entity, model)
         cube['dimensions'].append(cube_dim)
+
 
     for dim in model['dimensions']:
         cube_dim = dimension_to_cube(dim, model)
